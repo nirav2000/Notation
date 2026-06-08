@@ -1,0 +1,23 @@
+[
+  {
+    "version": "1.0.0",
+    "status": "current",
+    "date": "2026-06-08",
+    "path": "./index.html",
+    "notes": "Polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, analytics, import/export, and version switching."
+  },
+  {
+    "version": "0.0.1",
+    "status": "previous",
+    "date": "2026-06-08",
+    "path": "./archive/v0.0.1/index.html",
+    "notes": "Archived repository starter page."
+  },
+  {
+    "version": "1.1.0",
+    "status": "future",
+    "date": "Planned",
+    "path": "",
+    "notes": "Planned: richer MIDI support, grand staff phrases, audio ear-training prompts, and more detailed rhythm scoring."
+  }
+]
