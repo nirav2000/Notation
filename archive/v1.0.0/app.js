@@ -1,8 +1,7 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.0';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '1.0.1', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '1.0.0', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
   { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '1.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: richer MIDI support, grand staff phrases, and audio ear-training prompts.' }
 ];
@@ -25,24 +24,24 @@ const LEVELS = [
 const NOTES = [
   { id: 'treble-c4', name: 'C', clef: 'treble', octave: 4, staff: -1, tags: ['middle-c'], label: 'Middle C', base: 1, explanation: 'This is Middle C, the landmark just below the treble staff.' },
   { id: 'bass-c4', name: 'C', clef: 'bass', octave: 4, staff: 6, tags: ['middle-c'], label: 'Middle C', base: 1, explanation: 'This is Middle C, the landmark just above the bass staff.' },
-  { id: 'treble-g4', name: 'G', clef: 'treble', octave: 4, staff: 1, tags: ['treble-g'], label: 'Treble G', base: 1, explanation: 'Treble G sits on the second line of the treble staff, where the treble clef curls.' },
-  { id: 'bass-f3', name: 'F', clef: 'bass', octave: 3, staff: 3, tags: ['bass-f'], label: 'Bass F', base: 1, explanation: 'Bass F sits on the fourth line of the bass staff, between the two clef dots.' },
-  { id: 'treble-b3', name: 'B', clef: 'treble', octave: 3, staff: -1.5, tags: ['near'], label: 'Step below Middle C', base: 1.2, explanation: 'This is one step below Middle C, so it is B.' },
+  { id: 'treble-g4', name: 'G', clef: 'treble', octave: 4, staff: 2, tags: ['treble-g'], label: 'Treble G', base: 1, explanation: 'Treble G sits on the second line of the treble staff, where the treble clef curls.' },
+  { id: 'bass-f3', name: 'F', clef: 'bass', octave: 3, staff: 2, tags: ['bass-f'], label: 'Bass F', base: 1, explanation: 'Bass F sits on the fourth line of the bass staff, between the two clef dots.' },
+  { id: 'treble-b3', name: 'B', clef: 'treble', octave: 3, staff: -0.5, tags: ['near'], label: 'Step below Middle C', base: 1.2, explanation: 'This is one step below Middle C, so it is B.' },
   { id: 'treble-d4', name: 'D', clef: 'treble', octave: 4, staff: -0.5, tags: ['near'], label: 'Step above Middle C', base: 1.2, explanation: 'This is one step above Middle C, so it is D.' },
-  { id: 'bass-b3', name: 'B', clef: 'bass', octave: 3, staff: 4.5, tags: ['near'], label: 'Step below Middle C', base: 1.2, explanation: 'This is one step below Middle C, so it is B.' },
-  { id: 'bass-d4', name: 'D', clef: 'bass', octave: 4, staff: 5.5, tags: ['near'], label: 'Step above Middle C', base: 1.2, explanation: 'This is one step above Middle C, so it is D.' },
-  { id: 'treble-f4', name: 'F', clef: 'treble', octave: 4, staff: 0.5, tags: ['near'], label: 'Step below Treble G', base: 1.3, explanation: 'This is one step below Treble G, so it is F.' },
-  { id: 'treble-a4', name: 'A', clef: 'treble', octave: 4, staff: 1.5, tags: ['near'], label: 'Step above Treble G', base: 1.3, explanation: 'This is one step above Treble G, so it is A.' },
-  { id: 'bass-e3', name: 'E', clef: 'bass', octave: 3, staff: 2.5, tags: ['near'], label: 'Step below Bass F', base: 1.3, explanation: 'This is one step below Bass F, so it is E.' },
-  { id: 'bass-g3', name: 'G', clef: 'bass', octave: 3, staff: 3.5, tags: ['near'], label: 'Step above Bass F', base: 1.3, explanation: 'This is one step above Bass F, so it is G.' },
-  { id: 'treble-c5', name: 'C', clef: 'treble', octave: 5, staff: 2.5, tags: ['high-c', 'fifth'], label: 'High C', base: 1.5, explanation: 'This is High C, one octave above Middle C and a fourth above Treble G.' },
-  { id: 'bass-c3', name: 'C', clef: 'bass', octave: 3, staff: 1.5, tags: ['low-c', 'fifth'], label: 'Low C', base: 1.5, explanation: 'This is Low C, a fifth below Bass F.' },
-  { id: 'treble-e4', name: 'E', clef: 'treble', octave: 4, staff: 0, tags: ['fifth'], label: 'Third above Middle C', base: 1.4, explanation: 'This is a third above Middle C: C to D to E.' },
-  { id: 'treble-b4', name: 'B', clef: 'treble', octave: 4, staff: 2, tags: ['fifth'], label: 'Third above Treble G', base: 1.6, explanation: 'This is a third above Treble G: G to A to B.' },
-  { id: 'bass-a3', name: 'A', clef: 'bass', octave: 3, staff: 4, tags: ['fifth'], label: 'Third above Bass F', base: 1.6, explanation: 'This is a third above Bass F: F to G to A.' },
-  { id: 'bass-d3', name: 'D', clef: 'bass', octave: 3, staff: 2, tags: ['fifth'], label: 'Third below Bass F', base: 1.6, explanation: 'This is a third below Bass F: F down to E, then D.' },
-  { id: 'treble-c6', name: 'C', clef: 'treble', octave: 6, staff: 6, tags: ['all'], label: 'Ledger C', base: 2.4, explanation: 'This ledger-line C is high above the treble staff. Relate it back to High C and count upward.' },
-  { id: 'bass-c2', name: 'C', clef: 'bass', octave: 2, staff: -2, tags: ['all'], label: 'Low ledger C', base: 2.4, explanation: 'This ledger-line C is below the bass staff. Relate it to Low C and count downward.' }
+  { id: 'bass-b3', name: 'B', clef: 'bass', octave: 3, staff: 5.5, tags: ['near'], label: 'Step below Middle C', base: 1.2, explanation: 'This is one step below Middle C, so it is B.' },
+  { id: 'bass-d4', name: 'D', clef: 'bass', octave: 4, staff: 6.5, tags: ['near'], label: 'Step above Middle C', base: 1.2, explanation: 'This is one step above Middle C, so it is D.' },
+  { id: 'treble-f4', name: 'F', clef: 'treble', octave: 4, staff: 1.5, tags: ['near'], label: 'Step below Treble G', base: 1.3, explanation: 'This is one step below Treble G, so it is F.' },
+  { id: 'treble-a4', name: 'A', clef: 'treble', octave: 4, staff: 2.5, tags: ['near'], label: 'Step above Treble G', base: 1.3, explanation: 'This is one step above Treble G, so it is A.' },
+  { id: 'bass-e3', name: 'E', clef: 'bass', octave: 3, staff: 1.5, tags: ['near'], label: 'Step below Bass F', base: 1.3, explanation: 'This is one step below Bass F, so it is E.' },
+  { id: 'bass-g3', name: 'G', clef: 'bass', octave: 3, staff: 2.5, tags: ['near'], label: 'Step above Bass F', base: 1.3, explanation: 'This is one step above Bass F, so it is G.' },
+  { id: 'treble-c5', name: 'C', clef: 'treble', octave: 5, staff: 4, tags: ['high-c', 'fifth'], label: 'High C', base: 1.5, explanation: 'This is High C, one octave above Middle C and a fourth above Treble G.' },
+  { id: 'bass-c3', name: 'C', clef: 'bass', octave: 3, staff: 0, tags: ['low-c', 'fifth'], label: 'Low C', base: 1.5, explanation: 'This is Low C, a fifth below Bass F.' },
+  { id: 'treble-e4', name: 'E', clef: 'treble', octave: 4, staff: 1, tags: ['fifth'], label: 'Third above Middle C', base: 1.4, explanation: 'This is a third above Middle C: C to D to E.' },
+  { id: 'treble-b4', name: 'B', clef: 'treble', octave: 4, staff: 3.5, tags: ['fifth'], label: 'Third above Treble G', base: 1.6, explanation: 'This is a third above Treble G: G to A to B.' },
+  { id: 'bass-a3', name: 'A', clef: 'bass', octave: 3, staff: 3, tags: ['fifth'], label: 'Third above Bass F', base: 1.6, explanation: 'This is a third above Bass F: F to G to A.' },
+  { id: 'bass-d3', name: 'D', clef: 'bass', octave: 3, staff: .5, tags: ['fifth'], label: 'Third below Bass F', base: 1.6, explanation: 'This is a third below Bass F: F down to E, then D.' },
+  { id: 'treble-c6', name: 'C', clef: 'treble', octave: 6, staff: 7.5, tags: ['all'], label: 'Ledger C', base: 2.4, explanation: 'This ledger-line C is high above the treble staff. Relate it back to High C and count upward.' },
+  { id: 'bass-c2', name: 'C', clef: 'bass', octave: 2, staff: -3.5, tags: ['all'], label: 'Low ledger C', base: 2.4, explanation: 'This ledger-line C is below the bass staff. Relate it to Low C and count downward.' }
 ];
 
 let state = loadState();
@@ -273,7 +272,7 @@ function renderSightExercise() {
     const nexts = pool.filter(n => Math.abs(n.staff - prev.staff) <= maxMove && n.id !== prev.id);
     phrase.push(nexts[Math.floor(Math.random() * nexts.length)] || weightedPick(pool, noteWeight));
   }
-  currentExercise = { type: 'sight', clef, phrase, index: 0, answer: phrase[0].name, started: performance.now(), correctCount: 0 };
+  currentExercise = { type: 'sight', phrase, index: 0, answer: phrase[0].name, started: performance.now(), correctCount: 0 };
   el('modeLabel').textContent = 'Mini Sight Reading';
   el('promptText').textContent = 'Play through the phrase by note name';
   renderStaff(clef, phrase);
@@ -315,7 +314,6 @@ function handleAnswer(value, btn) {
     } else {
       currentExercise.answer = currentExercise.phrase[currentExercise.index].name;
       renderPhraseProgress();
-      renderStaff(currentExercise.clef, currentExercise.phrase);
       showFeedback(correct, correct ? 'Correct. Keep the line moving.' : `That note was ${currentExercise.phrase[currentExercise.index - 1].name}. Continue from the next note.`);
     }
     return;

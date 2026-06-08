@@ -1,10 +1,17 @@
 [
   {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "status": "current",
     "date": "2026-06-08",
     "path": "./index.html",
-    "notes": "Polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, analytics, import/export, and version switching."
+    "notes": "Fixes staff placement accuracy, sight-reading highlighting, and version archive handling."
+  },
+  {
+    "version": "1.0.0",
+    "status": "previous",
+    "date": "2026-06-08",
+    "path": "./archive/v1.0.0/index.html",
+    "notes": "Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, analytics, import/export, and version switching."
   },
   {
     "version": "0.0.1",
