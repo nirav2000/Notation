@@ -1,11 +1,10 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.0';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.1', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
-  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: './archive/v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '2.0.0', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
 ];
 
@@ -435,7 +434,6 @@ function gradeRhythm() {
   recordResult(correct, Math.round((performance.now() - exerciseStartedAt)), { rhythmScore: score });
   showFeedback(correct, `${label}: average timing was ${avgDiff.toFixed(2)} beats from the target.`);
   answered = true;
-  markExerciseComplete(correct);
 }
 
 function renderSightExercise() {
@@ -476,7 +474,7 @@ function renderAnswerButtons(values, handler) {
 }
 
 function handleAnswer(value, btn) {
-  if (answered) return;
+  if (answered && currentExercise.type !== 'sight') return;
   const time = Math.round(performance.now() - exerciseStartedAt);
   const correct = value === currentExercise.answer;
   btn?.classList.add(correct ? 'correct' : 'wrong');
@@ -484,18 +482,9 @@ function handleAnswer(value, btn) {
     if (correct) currentExercise.correctCount += 1;
     currentExercise.index += 1;
     if (currentExercise.index >= currentExercise.phrase.length) {
-      const phraseTotal = currentExercise.phrase.length;
-      const phraseCorrect = currentExercise.correctCount;
-      const phrasePerfect = phraseCorrect === phraseTotal;
-      recordResult(phrasePerfect, Math.round(performance.now() - currentExercise.started), {
-        phraseAccuracy: phraseCorrect / phraseTotal,
-        phraseCorrect,
-        phraseTotal,
-        phraseNotes: currentExercise.phrase.map(note => ({ id: note.id, name: note.name, clef: note.clef, staff: note.staff, label: note.label }))
-      });
-      showFeedback(phrasePerfect, `Phrase complete: ${phraseCorrect}/${phraseTotal} notes correct.`);
+      recordResult(currentExercise.correctCount === currentExercise.phrase.length, Math.round(performance.now() - currentExercise.started), { phraseAccuracy: currentExercise.correctCount / currentExercise.phrase.length });
+      showFeedback(currentExercise.correctCount === currentExercise.phrase.length, `Phrase complete: ${currentExercise.correctCount}/${currentExercise.phrase.length} notes correct.`);
       answered = true;
-      markExerciseComplete(phrasePerfect);
     } else {
       currentExercise.answer = currentExercise.phrase[currentExercise.index].name;
       renderPhraseProgress();
@@ -508,18 +497,13 @@ function handleAnswer(value, btn) {
   recordResult(correct, time, { userAnswer: value });
   showFeedback(correct, correct ? `Correct — ${time} ms. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}` : `Not quite. Correct answer: ${currentExercise.answer.replaceAll('-', ' ')}. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}`);
   answered = true;
-  markExerciseComplete(correct);
-}
-
-function markExerciseComplete(correct) {
-  el('nextBtn').textContent = session ? 'Next exercise' : 'Next';
-  if (correct && (session || currentExercise?.type === 'note')) scheduleAutoAdvance();
+  if (correct && currentExercise.type === 'note') scheduleAutoAdvance();
 }
 
 function scheduleAutoAdvance() {
   clearTimeout(autoAdvanceTimer);
   autoAdvanceTimer = setTimeout(() => {
-    if (!answered) return;
+    if (!answered || currentExercise?.type !== 'note') return;
     if (session && Date.now() > session.ends) endSession();
     else startMode(session ? chooseSessionMode() : (document.body.classList.contains('clean-test') ? 'clean-note' : currentMode), !!session);
   }, 1150);
@@ -648,65 +632,6 @@ function renderProgress() {
   clefs.sort((a, b) => b.acc - a.acc || a.time - b.time);
   el('clefSummary').textContent = clefs.length ? `Strongest clef: ${clefs[0].clef}. Weakest clef: ${clefs[clefs.length - 1].clef}.` : 'Clef statistics will appear after practice.';
   el('projectionText').textContent = projection();
-  renderRecentQuestions();
-}
-
-
-function miniStaffSvg(entry) {
-  const note = entry.noteId ? NOTES.find(n => n.id === entry.noteId) : null;
-  const phraseNotes = entry.phraseNotes || [];
-  const clef = note?.clef || phraseNotes[0]?.clef || entry.clef || 'treble';
-  const top = 18, gap = 8, left = 30;
-  const yFor = staff => top + (4 - staff) * gap;
-  const noteShapes = note ? [{ ...note, x: 84, fill: entry.correct ? '#00b894' : '#d92d20' }] : phraseNotes.slice(0, 5).map((n, i) => ({ ...n, x: 58 + i * 20, fill: entry.correct ? '#00b894' : '#d92d20' }));
-  const notesSvg = noteShapes.map(n => `<ellipse cx="${n.x}" cy="${yFor(n.staff || 0)}" rx="8" ry="5.5" transform="rotate(-18 ${n.x} ${yFor(n.staff || 0)})" fill="${n.fill}"/>`).join('');
-  return `<svg viewBox="0 0 150 70" aria-hidden="true"><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="140" y1="${top + i * gap}" y2="${top + i * gap}" stroke="currentColor" stroke-width="1.3"/>`).join('')}<text x="4" y="${clef === 'treble' ? 52 : 45}" font-size="${clef === 'treble' ? 42 : 34}" font-family="Georgia,serif" fill="currentColor">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${notesSvg}</g></svg>`;
-}
-
-function describeHistoryEntry(entry) {
-  if (entry.type === 'note') {
-    const note = NOTES.find(n => n.id === entry.noteId);
-    return { title: `${note?.label || entry.note || 'Note'} in ${entry.clef || note?.clef || 'staff'}`, detail: `Question: name the note. Answered ${entry.userAnswer || '—'}, correct answer ${entry.correctAnswer || entry.note}.` };
-  }
-  if (entry.type === 'sight') return { title: `Mini sight-reading phrase`, detail: `Phrase result: ${entry.phraseCorrect ?? Math.round((entry.phraseAccuracy || 0) * (entry.phraseTotal || 0))}/${entry.phraseTotal || '?'} notes correct.` };
-  if (entry.type === 'interval') return { title: `Interval: ${entry.interval?.replaceAll('-', ' ') || 'interval'}`, detail: `Question: identify the interval direction in ${entry.clef || 'the staff'}.` };
-  if (entry.type === 'rhythm') return { title: 'Rhythm tapping question', detail: `Timing score: ${Math.round((entry.rhythmScore || 0) * 100)}%.` };
-  return { title: 'Practice question', detail: 'Review this recent attempt.' };
-}
-
-function renderRecentQuestions() {
-  const target = el('recentQuestions');
-  if (!target) return;
-  const recent = state.history.slice(-8).reverse();
-  if (!recent.length) {
-    target.innerHTML = '<p class="muted">Your latest questions will appear here with a tiny staff preview and a review link after you practice.</p>';
-    return;
-  }
-  target.innerHTML = recent.map(entry => {
-    const desc = describeHistoryEntry(entry);
-    const when = new Date(entry.timestamp).toLocaleString();
-    const review = entry.noteId ? `<button class="secondary-btn" type="button" data-review-note="${entry.noteId}">Review note</button>` : `<span class="muted">${entry.type}</span>`;
-    return `<div class="review-item">${miniStaffSvg(entry)}<div class="review-meta"><strong>${desc.title}</strong><span>${desc.detail}<br>${entry.correct ? 'Correct' : 'Needs review'} · ${Math.round(entry.responseTime || 0)} ms · ${when}</span></div>${review}</div>`;
-  }).join('');
-}
-
-function reviewNote(noteId) {
-  const note = NOTES.find(n => n.id === noteId);
-  if (!note) return;
-  clearTimeout(autoAdvanceTimer);
-  session = null;
-  currentMode = 'note';
-  answered = false;
-  exerciseStartedAt = performance.now();
-  showView('practice');
-  el('sessionPill').textContent = 'Review question';
-  el('modeLabel').textContent = 'Question Review';
-  el('promptText').textContent = 'Try this note again';
-  currentExercise = { type: 'note', note, answer: note.name };
-  renderStaff(note.clef, [note]);
-  renderAnswerButtons(NOTE_NAMES, handleAnswer);
-  el('feedback').className = 'feedback neutral';
-  el('feedback').textContent = `Reviewing ${note.label}.`;
 }
 
 function makeBars(id, items) {
@@ -844,10 +769,6 @@ function bindEvents() {
   el('soundToggle').onclick = () => { state.settings.sound = !state.settings.sound; saveState(); applySound(); };
   el('levelOverride').onchange = e => { state.settings.manualLevel = Number(e.target.value); saveState(); renderDashboard(); };
   document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : startMode(btn.dataset.mode)));
-  el('recentQuestions').addEventListener('click', e => {
-    const noteId = e.target.closest('[data-review-note]')?.dataset.reviewNote;
-    if (noteId) reviewNote(noteId);
-  });
   document.addEventListener('keydown', e => {
     const key = e.key.toUpperCase();
     if (NOTE_NAMES.includes(key) && ['note', 'sight'].includes(currentMode)) handleAnswer(key);

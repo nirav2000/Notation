@@ -1,6 +1,6 @@
-# Sight Reading Coach
+# Sight Reading Coach v2.0.0 Archive
 
-Sight Reading Coach v2.0.1 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
+Sight Reading Coach v2.0.0 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
 
 ## Run locally
 
@@ -18,7 +18,6 @@ Then visit <http://localhost:8000>.
 - `styles.css` — responsive light/dark visual design.
 - `app.js` — notation rendering, adaptive exercise logic, session flow, analytics, import/export, and localStorage persistence.
 - `version-history.json` — global semantic version history used by the in-app version selector.
-- `archive/v2.0.0/` — archived v2.0.0 app snapshot.
 - `archive/v1.0.1/` — archived v1.0.1 app snapshot.
 - `archive/v1.0.0/` — archived v1.0.0 app snapshot.
 - `archive/v0.0.1/index.html` — archived starter version snapshot.
@@ -34,7 +33,7 @@ All user progress is stored per profile in the browser with `localStorage` under
 Use the Progress page to export progress as JSON, import a previous JSON export, or reset progress with confirmation.
 
 
-## Firebase setup for v2.x
+## Firebase setup for v2.0.0
 
 The app initializes Firebase with the `notation-mvp` web configuration, uses Anonymous Authentication, and saves profile documents in Cloud Firestore. In Firebase Console:
 
