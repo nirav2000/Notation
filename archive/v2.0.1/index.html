@@ -58,8 +58,7 @@
           <button data-mode="interval" class="mode-card"><strong>Interval Trainer</strong><span>Same, steps, skips, 2nds–5ths</span></button>
           <button data-mode="rhythm" class="mode-card"><strong>Rhythm Trainer</strong><span>Tap with the metronome</span></button>
           <button data-mode="sight" class="mode-card"><strong>Mini Sight Reading</strong><span>Short generated phrases</span></button>
-          <button data-mode="progress" class="mode-card"><strong>Progress</strong><span>Trends, strengths, review</span></button>
-          <button data-mode="settings" class="mode-card"><strong>Settings</strong><span>Profiles, Firebase sync, imports</span></button>
+          <button data-mode="progress" class="mode-card"><strong>Progress</strong><span>Trends, strengths, exports</span></button>
         </nav>
       </section>
 
@@ -111,39 +110,15 @@
           <article class="card recent-review-card"><h3>Recent question review</h3><div id="recentQuestions" class="recent-question-list"></div></article>
         </div>
         <div class="settings card">
-          <h3>Settings moved</h3>
-          <p class="muted">Profiles, Firebase sync, clean note test, import, export, and reset now live on a dedicated Settings page.</p>
-          <button id="openSettingsFromProgress" class="secondary-btn" type="button">Open Settings</button>
-        </div>
-      </section>
-
-      <section id="settingsView" class="view">
-        <div class="section-title">
-          <div><p class="eyebrow">App controls</p><h2>Settings</h2></div>
-          <button id="backFromSettings" class="secondary-btn" type="button">Back</button>
-        </div>
-        <div class="settings-grid">
-          <article class="card settings">
-            <h3>Profiles and cloud sync</h3>
-            <p id="firebaseStatus" class="muted">Firebase sync is starting…</p>
-            <div class="settings-row">
-              <button id="cloudSyncBtn" class="secondary-btn" type="button">Sync active profile now</button>
-              <button id="exportBtn" class="secondary-btn" type="button">Export Progress JSON</button>
-              <label class="import-label">Import Progress JSON<input id="importInput" type="file" accept="application/json" /></label>
-            </div>
-          </article>
-          <article class="card settings">
-            <h3>Practice tools</h3>
-            <p class="muted">Use the clean note-test page when you want only the “name the note” panel without dashboard chrome.</p>
-            <div class="settings-row">
-              <button id="cleanTestBtn" class="secondary-btn" type="button">Open clean note test page</button>
-            </div>
-          </article>
-          <article class="card settings danger-zone">
-            <h3>Danger zone</h3>
-            <p class="muted">Reset only the active profile’s local progress. Export first if you may want to restore it.</p>
-            <button id="resetBtn" class="danger-btn" type="button">Reset Active Profile Progress</button>
-          </article>
+          <h3>Settings and data</h3>
+          <p id="firebaseStatus" class="muted">Firebase sync is starting…</p>
+          <div class="settings-row">
+            <button id="cleanTestBtn" class="secondary-btn" type="button">Open clean note test page</button>
+            <button id="cloudSyncBtn" class="secondary-btn" type="button">Sync active profile now</button>
+            <button id="exportBtn" class="secondary-btn" type="button">Export Progress JSON</button>
+            <label class="import-label">Import Progress JSON<input id="importInput" type="file" accept="application/json" /></label>
+            <button id="resetBtn" class="danger-btn" type="button">Reset Progress</button>
+          </div>
         </div>
       </section>
 

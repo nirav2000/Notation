@@ -1,12 +1,11 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.0.1';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.2', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
-  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: './archive/v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
-  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: './archive/v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '2.0.1', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
+  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: '../v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
 ];
 
@@ -390,81 +389,51 @@ function renderRhythmExercise() {
     { label: '𝅝', beats: [0], total: 4 }
   ];
   const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-  currentExercise = { type: 'rhythm', pattern, answer: 'tap', measures: 0 };
-  rhythmStart = 0;
-  rhythmTaps = [];
+  currentExercise = { type: 'rhythm', pattern, answer: 'tap' };
   el('modeLabel').textContent = 'Rhythm Trainer';
   el('promptText').textContent = 'Tap the rhythm with the pulse';
-  el('notationArea').innerHTML = `<div class="rhythm-card"><button class="rhythm-pulse" id="pulse" type="button" aria-label="Tap rhythm circle">Tap<br><small>circle</small></button><div class="rhythm-pattern" aria-label="Rhythm pattern">${pattern.label}</div><p class="muted rhythm-hint">Press Start, listen for the pulse, then tap this circle or press Space on each note attack. The pulse keeps looping so you can improve over several measures before grading.</p></div>`;
-  el('pulse').addEventListener('click', recordRhythmTap);
-  renderAnswerButtons(['Start pulse', 'Grade rhythm', 'Reset taps'], rhythmAction);
-  el('coachTip').textContent = 'Let one measure go by first, then tap the rhythm. You can keep trying over multiple measures and grade your best loop.';
+  el('notationArea').innerHTML = `<div class="rhythm-card"><div class="rhythm-pulse" id="pulse">1</div><div class="rhythm-pattern" aria-label="Rhythm pattern">${pattern.label}</div><p class="muted">Tap the on-screen button or press Space on each note attack.</p></div>`;
+  renderAnswerButtons(['Start pulse', 'Tap'], rhythmAction);
+  el('coachTip').textContent = 'Count steady beats: 1, 2, 3, 4. Eighth notes divide the beat evenly in half.';
 }
 
 function rhythmAction(value) {
   if (value === 'Start pulse') startRhythmPulse();
-  else if (value === 'Reset taps') { rhythmTaps = []; el('feedback').textContent = 'Taps cleared. Keep the pulse going and try again.'; }
-  else gradeRhythm();
+  else recordRhythmTap();
 }
 
 function startRhythmPulse() {
   rhythmTaps = [];
-  rhythmStart = performance.now();
+  rhythmStart = performance.now() + 450;
   let beat = 0;
-  let ticks = 0;
   clearInterval(rhythmTimer);
   rhythmTimer = setInterval(() => {
     const pulse = el('pulse');
     if (!pulse) return;
     beat = (beat % 4) + 1;
-    ticks += 1;
-    currentExercise.measures = Math.floor((ticks - 1) / 4) + 1;
-    pulse.innerHTML = `${beat}<br><small>tap</small>`;
+    pulse.textContent = beat;
     pulse.classList.add('on');
     setTimeout(() => pulse.classList.remove('on'), 130);
-    if (ticks >= 32) {
-      clearInterval(rhythmTimer);
-      pulse.innerHTML = 'Grade<br><small>now</small>';
-      el('feedback').textContent = 'Pulse paused after 8 measures. Grade your best attempt or start again.';
-    }
   }, 600);
-  el('feedback').className = 'feedback neutral';
-  el('feedback').textContent = 'Pulse started. Tap the circle on each note attack; you have up to 8 measures to improve.';
+  el('feedback').textContent = 'Pulse started. Tap the rhythm notes, not every beat.';
 }
 
 function recordRhythmTap() {
-  if (answered) return;
   if (!rhythmStart) startRhythmPulse();
-  const pulse = el('pulse');
-  pulse?.classList.add('tap-flash');
-  setTimeout(() => pulse?.classList.remove('tap-flash'), 100);
   rhythmTaps.push((performance.now() - rhythmStart) / 600);
-  el('feedback').className = 'feedback neutral';
-  el('feedback').textContent = `${rhythmTaps.length} tap${rhythmTaps.length === 1 ? '' : 's'} captured. Keep going, then choose “Grade rhythm.”`;
+  if (rhythmTaps.length >= currentExercise.pattern.beats.length) gradeRhythm();
 }
 
 function gradeRhythm() {
-  const expected = currentExercise.pattern.beats;
-  if (rhythmTaps.length < expected.length) {
-    el('feedback').className = 'feedback bad';
-    el('feedback').textContent = `Need at least ${expected.length} tap${expected.length === 1 ? '' : 's'} for this pattern. Tap the circle with the pulse, then grade again.`;
-    return;
-  }
   clearInterval(rhythmTimer);
-  const measureScores = [];
-  for (let measure = 0; measure < 8; measure++) {
-    const measureStart = measure * currentExercise.pattern.total;
-    const taps = rhythmTaps.filter(t => t >= measureStart - .25 && t < measureStart + currentExercise.pattern.total + .25).map(t => t - measureStart);
-    if (taps.length < expected.length) continue;
-    const diffs = expected.map((b, i) => Math.abs((taps[i] ?? 99) - b));
-    measureScores.push({ measure: measure + 1, avgDiff: avg(diffs) });
-  }
-  const best = measureScores.sort((a, b) => a.avgDiff - b.avgDiff)[0] || { measure: 1, avgDiff: 9 };
-  const score = clamp(1 - best.avgDiff / .45, 0, 1);
+  const expected = currentExercise.pattern.beats;
+  const diffs = expected.map((b, i) => Math.abs((rhythmTaps[i] ?? 99) - b));
+  const avgDiff = avg(diffs);
+  const score = clamp(1 - avgDiff / .45, 0, 1);
   const correct = score >= .68;
   const label = score > .82 ? 'Good' : score > .55 ? 'Close' : 'Try again';
-  recordResult(correct, Math.round((performance.now() - exerciseStartedAt)), { rhythmScore: score, rhythmTaps: rhythmTaps.length, bestMeasure: best.measure });
-  showFeedback(correct, `${label}: best loop was measure ${best.measure}, averaging ${best.avgDiff.toFixed(2)} beats from the target.`);
+  recordResult(correct, Math.round((performance.now() - exerciseStartedAt)), { rhythmScore: score });
+  showFeedback(correct, `${label}: average timing was ${avgDiff.toFixed(2)} beats from the target.`);
   answered = true;
   markExerciseComplete(correct);
 }
@@ -650,10 +619,9 @@ function renderStaff(clef, notes, options = {}) {
 
 function showView(id) {
   if (id !== 'practice') document.body.classList.remove('clean-test');
-  ['dashboard', 'practice', 'progressView', 'settingsView', 'summaryView'].forEach(v => el(v).classList.toggle('active', v === id));
+  ['dashboard', 'practice', 'progressView', 'summaryView'].forEach(v => el(v).classList.toggle('active', v === id));
   if (id === 'dashboard') renderDashboard();
   if (id === 'progressView') renderProgress();
-  if (id === 'settingsView') updateFirebaseStatus();
 }
 
 function renderDashboard() {
@@ -864,8 +832,6 @@ function bindEvents() {
   el('endSessionBtn').onclick = () => { session ? endSession() : showView('dashboard'); };
   el('summaryHomeBtn').onclick = () => showView('dashboard');
   el('backFromProgress').onclick = () => showView('dashboard');
-  el('backFromSettings').onclick = () => showView('dashboard');
-  el('openSettingsFromProgress').onclick = () => showView('settingsView');
   el('exportBtn').onclick = exportProgress;
   el('cloudSyncBtn').onclick = saveCloudProfile;
   el('cleanTestBtn').onclick = () => startMode('clean-note');
@@ -877,7 +843,7 @@ function bindEvents() {
   el('themeToggle').onclick = () => { state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark'; saveState(); applyTheme(); };
   el('soundToggle').onclick = () => { state.settings.sound = !state.settings.sound; saveState(); applySound(); };
   el('levelOverride').onchange = e => { state.settings.manualLevel = Number(e.target.value); saveState(); renderDashboard(); };
-  document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : (btn.dataset.mode === 'settings' ? showView('settingsView') : startMode(btn.dataset.mode))));
+  document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : startMode(btn.dataset.mode)));
   el('recentQuestions').addEventListener('click', e => {
     const noteId = e.target.closest('[data-review-note]')?.dataset.reviewNote;
     if (noteId) reviewNote(noteId);

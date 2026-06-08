@@ -1,44 +1,37 @@
 [
   {
-    "version": "2.0.2",
+    "version": "2.0.1",
     "status": "current",
     "date": "2026-06-08",
     "path": "./index.html",
-    "notes": "Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment."
-  },
-  {
-    "version": "2.0.1",
-    "status": "previous",
-    "date": "2026-06-08",
-    "path": "./archive/v2.0.1/index.html",
     "notes": "Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review."
   },
   {
     "version": "2.0.0",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v2.0.0/index.html",
+    "path": "../v2.0.0/index.html",
     "notes": "Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs."
   },
   {
     "version": "1.0.1",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v1.0.1/index.html",
+    "path": "../v1.0.1/index.html",
     "notes": "Fixes staff placement accuracy, sight-reading highlighting, and version archive handling."
   },
   {
     "version": "1.0.0",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v1.0.0/index.html",
+    "path": "../v1.0.0/index.html",
     "notes": "Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, analytics, import/export, and version switching."
   },
   {
     "version": "0.0.1",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v0.0.1/index.html",
+    "path": "../v0.0.1/index.html",
     "notes": "Archived repository starter page."
   },
   {

@@ -2,7 +2,7 @@
 const APP_VERSION = '1.0.0';
 const VERSION_HISTORY_FALLBACK = [
   { version: '1.0.0', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '1.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: richer MIDI support, grand staff phrases, and audio ear-training prompts.' }
 ];
 

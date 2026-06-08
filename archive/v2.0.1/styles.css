@@ -38,17 +38,16 @@ body {
 button, select, input { font: inherit; }
 button { cursor: pointer; }
 .app-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 44px; }
-.topbar { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(520px, auto); gap: 28px; align-items: start; margin-bottom: 28px; }
+.topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start; margin-bottom: 28px; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(2rem, 5vw, 3.7rem); letter-spacing: -.06em; }
 h2 { font-size: clamp(1.6rem, 3vw, 2.55rem); letter-spacing: -.04em; margin-bottom: 12px; }
 h3 { margin-bottom: 12px; }
 .eyebrow { color: var(--brand); text-transform: uppercase; font-size: .78rem; font-weight: 800; letter-spacing: .12em; margin-bottom: 6px; }
 .muted { color: var(--muted); line-height: 1.6; }
-.hero-actions, .trainer-actions, .settings-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.top-actions { display: grid; grid-template-columns: minmax(120px, max-content) max-content minmax(190px, max-content) 56px 56px; gap: 10px; align-items: end; justify-content: end; padding-top: 8px; }
-.top-actions .ghost-btn { min-height: 52px; min-width: 56px; }
-#newProfileBtn { min-height: 52px; white-space: nowrap; }
+.top-actions, .hero-actions, .trainer-actions, .settings-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.top-actions { align-items: end; justify-content: flex-end; padding-top: 8px; }
+.top-actions .ghost-btn { min-height: 52px; }
 .version-picker { color: var(--muted); font-size: .88rem; display: grid; gap: 4px; }
 select, .import-label { border: 1px solid var(--line); background: var(--panel-strong); color: var(--text); border-radius: 12px; padding: 10px 12px; }
 .import-label input { display: none; }
@@ -63,12 +62,12 @@ select, .import-label { border: 1px solid var(--line); background: var(--panel-s
 .ghost-btn { background: transparent; border: 1px solid var(--line); color: var(--text); }
 .danger-btn { background: rgba(217, 45, 32, .12); color: var(--danger); }
 button:hover { transform: translateY(-1px); }
-.stats-grid, .mode-grid, .progress-grid, .settings-grid, .summary-grid { display: grid; gap: 16px; margin-top: 16px; }
+.stats-grid, .mode-grid, .progress-grid, .summary-grid { display: grid; gap: 16px; margin-top: 16px; }
 .stats-grid { grid-template-columns: repeat(6, 1fr); }
 .stat-card { padding: 18px; }
 .stat-card span { display: block; color: var(--muted); font-size: .88rem; margin-bottom: 8px; }
 .stat-card strong { font-size: 1.35rem; }
-.mode-grid { grid-template-columns: repeat(6, 1fr); }
+.mode-grid { grid-template-columns: repeat(5, 1fr); }
 .mode-card { text-align: left; color: var(--text); padding: 20px; min-height: 126px; }
 .mode-card span { display: block; color: var(--muted); margin-top: 8px; line-height: 1.45; font-weight: 500; }
 .view { display: none; }
@@ -96,8 +95,8 @@ body.dark .notation-area { background: rgba(15, 23, 42, .45); }
 .phrase-dot.done { background: var(--brand-2); }
 .phrase-dot.current { background: var(--brand); transform: scale(1.2); }
 .hidden { display: none !important; }
-.progress-grid, .settings-grid { grid-template-columns: repeat(3, 1fr); }
-.recent-review-card, .settings-grid .settings:first-child { grid-column: 1 / -1; }
+.progress-grid { grid-template-columns: repeat(3, 1fr); }
+.recent-review-card { grid-column: 1 / -1; }
 .recent-question-list { display: grid; gap: 12px; }
 .review-item { display: grid; grid-template-columns: 150px 1fr auto; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: rgba(108,92,231,.06); }
 .review-item svg { width: 150px; height: 70px; }
@@ -110,14 +109,10 @@ body.dark .notation-area { background: rgba(15, 23, 42, .45); }
 .summary-card { max-width: 760px; margin: 30px auto; text-align: center; }
 .summary-grid { grid-template-columns: repeat(2, 1fr); text-align: left; margin-bottom: 20px; }
 .summary-grid div { background: rgba(108,92,231,.08); padding: 16px; border-radius: 16px; }
-.rhythm-pulse { width: 132px; height: 132px; border-radius: 999px; border: 0; background: rgba(108,92,231,.15); color: var(--text); display: grid; place-items: center; margin: 12px auto; font-weight: 900; font-size: 2rem; transition: transform .12s ease, background .12s ease; box-shadow: inset 0 0 0 2px rgba(108,92,231,.12); }
+.rhythm-pulse { width: 120px; height: 120px; border-radius: 999px; background: rgba(108,92,231,.15); display: grid; place-items: center; margin: 12px auto; font-weight: 900; font-size: 2rem; transition: transform .12s ease, background .12s ease; }
 .rhythm-pulse.on { transform: scale(1.08); background: rgba(0,184,148,.24); }
-.rhythm-pulse.tap-flash { background: rgba(245,158,11,.28); }
-.rhythm-pattern { text-align: center; font-size: 2.5rem; letter-spacing: .15em; margin: 8px 0; }
-.rhythm-hint { text-align: center; }
-@media (max-width: 1060px) { .topbar { grid-template-columns: 1fr; } .top-actions { justify-content: start; } }
-@media (max-width: 920px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .mode-grid, .progress-grid, .settings-grid { grid-template-columns: repeat(2, 1fr); } .practice-layout { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .review-item { grid-template-columns: 1fr; } .topbar { grid-template-columns: 1fr; } .top-actions { display: flex; align-items: stretch; } .version-picker { width: 100%; } .version-picker select { width: 100%; } .app-shell { width: min(100% - 18px, 1180px); padding-top: 16px; } .topbar, .hero, .trainer-header, .section-title { flex-direction: column; align-items: stretch; } .level-ring { width: 120px; height: 120px; } .stats-grid, .mode-grid, .progress-grid, .settings-grid, .summary-grid { grid-template-columns: 1fr; } .top-actions { justify-content: space-between; } .answer-btn { flex: 1 0 24%; } }
+@media (max-width: 920px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .mode-grid, .progress-grid { grid-template-columns: repeat(2, 1fr); } .practice-layout { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .review-item { grid-template-columns: 1fr; } .topbar { grid-template-columns: 1fr; } .app-shell { width: min(100% - 18px, 1180px); padding-top: 16px; } .topbar, .hero, .trainer-header, .section-title { flex-direction: column; align-items: stretch; } .level-ring { width: 120px; height: 120px; } .stats-grid, .mode-grid, .progress-grid, .summary-grid { grid-template-columns: 1fr; } .top-actions { justify-content: space-between; } .answer-btn { flex: 1 0 24%; } }
 
 /* Clean note-test page launched from settings. */
 body.clean-test .topbar,
