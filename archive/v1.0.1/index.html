@@ -14,10 +14,6 @@
         <h1>Sight Reading Coach</h1>
       </div>
       <div class="top-actions">
-        <label class="version-picker">Profile
-          <select id="profileSelect" aria-label="Switch user profile"></select>
-        </label>
-        <button id="newProfileBtn" class="ghost-btn" type="button" aria-label="Create a new profile">＋ Profile</button>
         <label class="version-picker">Version
           <select id="versionSelect" aria-label="Switch app version"></select>
         </label>
@@ -110,10 +106,7 @@
         </div>
         <div class="settings card">
           <h3>Settings and data</h3>
-          <p id="firebaseStatus" class="muted">Firebase sync is starting…</p>
           <div class="settings-row">
-            <button id="cleanTestBtn" class="secondary-btn" type="button">Open clean note test page</button>
-            <button id="cloudSyncBtn" class="secondary-btn" type="button">Sync active profile now</button>
             <button id="exportBtn" class="secondary-btn" type="button">Export Progress JSON</button>
             <label class="import-label">Import Progress JSON<input id="importInput" type="file" accept="application/json" /></label>
             <button id="resetBtn" class="danger-btn" type="button">Reset Progress</button>

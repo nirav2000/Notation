@@ -1,24 +1,13 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '1.0.1';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.0', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
-  { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
+  { version: '1.0.1', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '1.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: richer MIDI support, grand staff phrases, and audio ear-training prompts.' }
 ];
 
-const STORAGE_KEY = 'sightReadingCoach.v2';
-const LEGACY_STORAGE_KEY = 'sightReadingCoach.v1';
-const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyBynvYvsd_CZTSVggEsyZwpHnbtaX3RUBk',
-  authDomain: 'notation-mvp.firebaseapp.com',
-  projectId: 'notation-mvp',
-  storageBucket: 'notation-mvp.firebasestorage.app',
-  messagingSenderId: '374493733468',
-  appId: '1:374493733468:web:901650018d85efc7253c99',
-  measurementId: 'G-TSZJ5ZW4FC'
-};
+const STORAGE_KEY = 'sightReadingCoach.v1';
 const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const LEVELS = [
   { level: 1, focus: 'Landmarks', description: 'Middle C, Treble G, Bass F', noteTags: ['middle-c', 'treble-g', 'bass-f'] },
@@ -56,8 +45,7 @@ const NOTES = [
   { id: 'bass-c2', name: 'C', clef: 'bass', octave: 2, staff: -2, tags: ['all'], label: 'Low ledger C', base: 2.4, explanation: 'This ledger-line C is below the bass staff. Relate it to Low C and count downward.' }
 ];
 
-let appData = loadAppData();
-let state = activeProfile().data;
+let state = loadState();
 let currentMode = 'note';
 let currentExercise = null;
 let exerciseStartedAt = 0;
@@ -66,9 +54,6 @@ let session = null;
 let rhythmTimer = null;
 let rhythmStart = 0;
 let rhythmTaps = [];
-let autoAdvanceTimer = null;
-let saveDebounce = null;
-let firebaseSync = { ready: false, status: 'Connecting to Firebase…', uid: null, db: null, doc: null, setDoc: null, getDoc: null, serverTimestamp: null };
 
 const el = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -91,166 +76,12 @@ function defaultState() {
   };
 }
 
-function createProfile(name = 'Student') {
-  const id = `profile-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  return { id, name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: defaultState() };
+function loadState() {
+  try { return { ...defaultState(), ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}) }; }
+  catch { return defaultState(); }
 }
 
-function normalizeProfile(profile) {
-  return { ...profile, data: { ...defaultState(), ...(profile.data || {}) } };
-}
-
-function loadAppData() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (stored?.profiles) {
-      stored.profiles = Object.fromEntries(Object.entries(stored.profiles).map(([id, profile]) => [id, normalizeProfile(profile)]));
-      return stored;
-    }
-  } catch { /* ignore corrupt v2 data */ }
-  const firstProfile = createProfile('Student');
-  try {
-    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY));
-    if (legacy) firstProfile.data = { ...defaultState(), ...legacy };
-  } catch { /* ignore corrupt v1 data */ }
-  return { schemaVersion: 2, activeProfileId: firstProfile.id, profiles: { [firstProfile.id]: firstProfile }, cloud: { lastSync: null } };
-}
-
-function activeProfile() {
-  if (!appData.profiles[appData.activeProfileId]) {
-    const fallback = createProfile('Student');
-    appData.activeProfileId = fallback.id;
-    appData.profiles[fallback.id] = fallback;
-  }
-  appData.profiles[appData.activeProfileId] = normalizeProfile(appData.profiles[appData.activeProfileId]);
-  return appData.profiles[appData.activeProfileId];
-}
-
-function saveState({ sync = true } = {}) {
-  const profile = activeProfile();
-  profile.data = state;
-  profile.updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-  populateProfiles();
-  if (sync) scheduleCloudSave();
-}
-
-
-function populateProfiles() {
-  const select = el('profileSelect');
-  if (!select) return;
-  const currentValue = select.value;
-  select.innerHTML = Object.values(appData.profiles)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map(profile => `<option value="${profile.id}">${profile.name}</option>`).join('');
-  select.value = appData.profiles[appData.activeProfileId] ? appData.activeProfileId : currentValue;
-}
-
-function switchProfile(profileId) {
-  if (!appData.profiles[profileId]) return;
-  activeProfile().data = state;
-  appData.activeProfileId = profileId;
-  state = activeProfile().data;
-  saveState({ sync: false });
-  applyTheme();
-  applySound();
-  populateLevels();
-  showView('dashboard');
-  loadCloudProfile();
-}
-
-function addProfile() {
-  const name = prompt('Name for the new profile?', `Student ${Object.keys(appData.profiles).length + 1}`)?.trim();
-  if (!name) return;
-  const profile = createProfile(name.slice(0, 40));
-  appData.profiles[profile.id] = profile;
-  appData.activeProfileId = profile.id;
-  state = profile.data;
-  saveState();
-  populateProfiles();
-  showView('dashboard');
-}
-
-function updateFirebaseStatus(text = firebaseSync.status) {
-  firebaseSync.status = text;
-  const status = el('firebaseStatus');
-  if (status) status.textContent = `Firebase: ${text}`;
-}
-
-async function initFirebase() {
-  try {
-    const [{ initializeApp }, { getAnalytics }, authSdk, firestoreSdk] = await Promise.all([
-      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js'),
-      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js'),
-      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')
-    ]);
-    const app = initializeApp(FIREBASE_CONFIG);
-    try { getAnalytics(app); } catch { /* analytics is unavailable on file:// and some local hosts */ }
-    const auth = authSdk.getAuth(app);
-    firebaseSync.db = firestoreSdk.getFirestore(app);
-    firebaseSync.doc = firestoreSdk.doc;
-    firebaseSync.setDoc = firestoreSdk.setDoc;
-    firebaseSync.getDoc = firestoreSdk.getDoc;
-    firebaseSync.serverTimestamp = firestoreSdk.serverTimestamp;
-    authSdk.onAuthStateChanged(auth, user => {
-      if (!user) return;
-      firebaseSync.uid = user.uid;
-      firebaseSync.ready = true;
-      updateFirebaseStatus(`connected as anonymous user ${user.uid.slice(0, 8)}…`);
-      loadCloudProfile();
-      scheduleCloudSave();
-    });
-    await authSdk.signInAnonymously(auth);
-  } catch (error) {
-    updateFirebaseStatus(`offline/local only (${error.message || 'Firebase unavailable'})`);
-  }
-}
-
-function cloudProfileRef() {
-  if (!firebaseSync.ready || !firebaseSync.uid) return null;
-  return firebaseSync.doc(firebaseSync.db, 'users', firebaseSync.uid, 'profiles', appData.activeProfileId);
-}
-
-function scheduleCloudSave() {
-  clearTimeout(saveDebounce);
-  saveDebounce = setTimeout(saveCloudProfile, 750);
-}
-
-async function saveCloudProfile() {
-  const ref = cloudProfileRef();
-  if (!ref || !firebaseSync.setDoc) return;
-  try {
-    await firebaseSync.setDoc(ref, {
-      profile: activeProfile(),
-      appVersion: APP_VERSION,
-      updatedAt: firebaseSync.serverTimestamp()
-    }, { merge: true });
-    appData.cloud.lastSync = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    updateFirebaseStatus(`synced ${activeProfile().name} at ${new Date().toLocaleTimeString()}`);
-  } catch (error) {
-    updateFirebaseStatus(`sync failed (${error.message || 'check Firestore rules'})`);
-  }
-}
-
-async function loadCloudProfile() {
-  const ref = cloudProfileRef();
-  if (!ref || !firebaseSync.getDoc) return;
-  try {
-    const snap = await firebaseSync.getDoc(ref);
-    const cloudProfile = snap.exists() ? snap.data().profile : null;
-    if (cloudProfile?.updatedAt && cloudProfile.updatedAt > activeProfile().updatedAt) {
-      appData.profiles[appData.activeProfileId] = normalizeProfile(cloudProfile);
-      state = activeProfile().data;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      renderDashboard();
-      updateFirebaseStatus(`loaded cloud data for ${activeProfile().name}`);
-    }
-  } catch (error) {
-    updateFirebaseStatus(`cloud load failed (${error.message || 'check Firestore rules'})`);
-  }
-}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
 function statBucket(map, key) {
   if (!map[key]) map[key] = { attempts: 0, correct: 0, totalTime: 0, recent: [] };
@@ -297,13 +128,10 @@ function noteWeight(note) {
 }
 
 function startMode(mode, asSession = false) {
-  clearTimeout(autoAdvanceTimer);
   currentMode = mode;
   answered = false;
   showView('practice');
-  document.body.classList.toggle('clean-test', mode === 'clean-note');
-  if (mode === 'clean-note') currentMode = 'note';
-  el('sessionPill').textContent = mode === 'clean-note' ? 'Clean note test' : (asSession ? '5-minute adaptive session' : 'Free practice');
+  el('sessionPill').textContent = asSession ? '5-minute adaptive session' : 'Free practice';
   renderExercise();
 }
 
@@ -327,7 +155,6 @@ function chooseSessionMode() {
 }
 
 function renderExercise() {
-  clearTimeout(autoAdvanceTimer);
   clearInterval(rhythmTimer);
   answered = false;
   exerciseStartedAt = performance.now();
@@ -493,20 +320,9 @@ function handleAnswer(value, btn) {
     }
     return;
   }
-  if (currentExercise.type === 'note') renderStaff(currentExercise.note.clef, [currentExercise.note], { selectedName: value });
   recordResult(correct, time, { userAnswer: value });
   showFeedback(correct, correct ? `Correct — ${time} ms. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}` : `Not quite. Correct answer: ${currentExercise.answer.replaceAll('-', ' ')}. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}`);
   answered = true;
-  if (correct && currentExercise.type === 'note') scheduleAutoAdvance();
-}
-
-function scheduleAutoAdvance() {
-  clearTimeout(autoAdvanceTimer);
-  autoAdvanceTimer = setTimeout(() => {
-    if (!answered || currentExercise?.type !== 'note') return;
-    if (session && Date.now() > session.ends) endSession();
-    else startMode(session ? chooseSessionMode() : (document.body.classList.contains('clean-test') ? 'clean-note' : currentMode), !!session);
-  }, 1150);
 }
 
 function intervalExplanation(key) {
@@ -571,38 +387,22 @@ function showFeedback(good, text) {
   if (session && Date.now() > session.ends) endSession();
 }
 
-function renderStaff(clef, notes, options = {}) {
-  const width = 760, height = 250, left = 112, top = 70, gap = 18;
+function renderStaff(clef, notes) {
+  const width = 760, height = 250, left = 92, top = 70, gap = 18;
   const yFor = staff => top + (4 - staff) * gap;
-  const ledgerLines = (x, staff) => {
-    let ledger = '';
-    for (let s = Math.ceil(staff); s <= -1; s++) ledger += `<line x1="${x - 24}" x2="${x + 24}" y1="${yFor(s)}" y2="${yFor(s)}" class="staff-line ledger"/>`;
-    for (let s = 5; s <= Math.floor(staff); s++) ledger += `<line x1="${x - 24}" x2="${x + 24}" y1="${yFor(s)}" y2="${yFor(s)}" class="staff-line ledger"/>`;
-    return ledger;
-  };
-  const sameNameHints = options.selectedName ? NOTES
-    .filter(note => note.clef === clef && note.name === options.selectedName && !notes.some(current => current.id === note.id))
-    .slice(0, 4) : [];
-  const hintSvg = sameNameHints.map((note, i) => {
-    const x = left + 260 + i * 70;
-    const y = yFor(note.staff);
-    return `${ledgerLines(x, note.staff)}<ellipse class="same-name-note" cx="${x}" cy="${y}" rx="13" ry="9" transform="rotate(-18 ${x} ${y})"><title>Another ${note.name}: ${note.label}</title></ellipse>`;
-  }).join('');
   const noteSvg = notes.map((note, i) => {
-    const x = left + 130 + i * 86;
+    const x = left + 150 + i * 86;
     const y = yFor(note.staff);
+    let ledger = '';
+    for (let s = Math.ceil(note.staff); s <= -1; s++) ledger += `<line x1="${x - 24}" x2="${x + 24}" y1="${yFor(s)}" y2="${yFor(s)}" class="staff-line"/>`;
+    for (let s = 5; s <= Math.floor(note.staff); s++) ledger += `<line x1="${x - 24}" x2="${x + 24}" y1="${yFor(s)}" y2="${yFor(s)}" class="staff-line"/>`;
     const active = currentExercise?.type === 'sight' && i === currentExercise.index ? ' active-note' : '';
-    const question = currentExercise?.type === 'note' && currentExercise.note?.id === note.id ? ' question-note' : '';
-    const selected = options.selectedName === note.name ? ' same-name-note' : '';
-    return `${ledgerLines(x, note.staff)}<ellipse class="notehead${active}${question}${selected}" cx="${x}" cy="${y}" rx="17" ry="12" transform="rotate(-18 ${x} ${y})"><title>${note.label || note.name}</title></ellipse><text x="${x}" y="${height - 24}" text-anchor="middle" class="note-label">${i + 1}</text>`;
+    return `${ledger}<ellipse class="notehead${active}" cx="${x}" cy="${y}" rx="17" ry="12" transform="rotate(-18 ${x} ${y})"/><text x="${x}" y="${height - 24}" text-anchor="middle" class="note-label">${i + 1}</text>`;
   }).join('');
-  const clefClass = clef === 'treble' ? 'treble-clef' : 'bass-clef';
-  const clefY = clef === 'treble' ? top + 78 : top + 58;
-  el('notationArea').innerHTML = `<svg viewBox="0 0 ${width} ${height}" aria-label="${clef} staff"><style>.staff-line{stroke:currentColor;stroke-width:2}.ledger{stroke-width:2.4}.notehead{fill:#243042}.active-note,.question-note{fill:#6c5ce7}.same-name-note{fill:#f59e0b;opacity:.92;stroke:#92400e;stroke-width:2}.clef{font-family:Georgia,'Times New Roman',serif;font-weight:700}.treble-clef{font-size:94px}.bass-clef{font-size:72px}.note-label{fill:var(--muted);font:700 12px system-ui}body.dark .notehead{fill:#f8fafc}body.dark .active-note,body.dark .question-note{fill:#a78bfa}</style><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="${width - 56}" y1="${top + i * gap}" y2="${top + i * gap}" class="staff-line"/>`).join('')}<text x="32" y="${clefY}" class="clef ${clefClass}">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${hintSvg}${noteSvg}</g></svg>`;
+  el('notationArea').innerHTML = `<svg viewBox="0 0 ${width} ${height}" aria-label="${clef} staff"><style>.staff-line{stroke:currentColor;stroke-width:2}.notehead{fill:#243042}.active-note{fill:#6c5ce7}.clef{font:700 44px system-ui}.note-label{fill:var(--muted);font:700 12px system-ui}body.dark .notehead{fill:#f8fafc}body.dark .active-note{fill:#a78bfa}</style><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="${width - 56}" y1="${top + i * gap}" y2="${top + i * gap}" class="staff-line"/>`).join('')}<text x="34" y="${top + 68}" class="clef">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${noteSvg}</g></svg>`;
 }
 
 function showView(id) {
-  if (id !== 'practice') document.body.classList.remove('clean-test');
   ['dashboard', 'practice', 'progressView', 'summaryView'].forEach(v => el(v).classList.toggle('active', v === id));
   if (id === 'dashboard') renderDashboard();
   if (id === 'progressView') renderProgress();
@@ -690,11 +490,10 @@ async function populateVersions() {
 }
 
 function exportProgress() {
-  const payload = { schemaVersion: 2, appVersion: APP_VERSION, exportedAt: new Date().toISOString(), activeProfileId: appData.activeProfileId, profile: activeProfile() };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `sight-reading-coach-${activeProfile().name.replace(/\W+/g, '-').toLowerCase()}-${today()}.json`;
+  a.download = `sight-reading-coach-progress-${today()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -702,23 +501,8 @@ function exportProgress() {
 function importProgress(file) {
   const reader = new FileReader();
   reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      if (parsed.profiles) {
-        appData = parsed;
-        state = activeProfile().data;
-      } else if (parsed.profile?.data) {
-        const imported = normalizeProfile(parsed.profile);
-        imported.id = imported.id || `profile-${Date.now()}`;
-        appData.profiles[imported.id] = imported;
-        appData.activeProfileId = imported.id;
-        state = imported.data;
-      } else {
-        state = { ...defaultState(), ...parsed };
-        activeProfile().data = state;
-      }
-      saveState(); init(); alert('Progress imported.');
-    } catch { alert('Could not import that JSON file.'); }
+    try { state = { ...defaultState(), ...JSON.parse(reader.result) }; saveState(); init(); alert('Progress imported.'); }
+    catch { alert('Could not import that JSON file.'); }
   };
   reader.readAsText(file);
 }
@@ -758,10 +542,6 @@ function bindEvents() {
   el('summaryHomeBtn').onclick = () => showView('dashboard');
   el('backFromProgress').onclick = () => showView('dashboard');
   el('exportBtn').onclick = exportProgress;
-  el('cloudSyncBtn').onclick = saveCloudProfile;
-  el('cleanTestBtn').onclick = () => startMode('clean-note');
-  el('newProfileBtn').onclick = addProfile;
-  el('profileSelect').onchange = e => switchProfile(e.target.value);
   el('resetBtn').onclick = resetProgress;
   el('importInput').onchange = e => e.target.files[0] && importProgress(e.target.files[0]);
   el('explainBtn').onclick = explainCurrent;
@@ -780,15 +560,12 @@ function applyTheme() { document.body.classList.toggle('dark', state.settings.th
 function applySound() { el('soundToggle').textContent = state.settings.sound ? '🔔' : '🔕'; }
 
 function init() {
-  populateProfiles();
   populateLevels();
   populateVersions();
   applyTheme();
   applySound();
   renderDashboard();
-  updateFirebaseStatus();
 }
 
 bindEvents();
 init();
-initFirebase();

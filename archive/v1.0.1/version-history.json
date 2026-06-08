@@ -1,37 +1,30 @@
 [
   {
-    "version": "2.0.0",
+    "version": "1.0.1",
     "status": "current",
     "date": "2026-06-08",
     "path": "./index.html",
-    "notes": "Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs."
-  },
-  {
-    "version": "1.0.1",
-    "status": "previous",
-    "date": "2026-06-08",
-    "path": "./archive/v1.0.1/index.html",
     "notes": "Fixes staff placement accuracy, sight-reading highlighting, and version archive handling."
   },
   {
     "version": "1.0.0",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v1.0.0/index.html",
+    "path": "../v1.0.0/index.html",
     "notes": "Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, analytics, import/export, and version switching."
   },
   {
     "version": "0.0.1",
     "status": "previous",
     "date": "2026-06-08",
-    "path": "./archive/v0.0.1/index.html",
+    "path": "../v0.0.1/index.html",
     "notes": "Archived repository starter page."
   },
   {
-    "version": "2.1.0",
+    "version": "1.1.0",
     "status": "future",
     "date": "Planned",
     "path": "",
-    "notes": "Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases."
+    "notes": "Planned: richer MIDI support, grand staff phrases, audio ear-training prompts, and more detailed rhythm scoring."
   }
 ]

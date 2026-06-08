@@ -105,14 +105,3 @@ body.dark .notation-area { background: rgba(15, 23, 42, .45); }
 .rhythm-pulse.on { transform: scale(1.08); background: rgba(0,184,148,.24); }
 @media (max-width: 920px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .mode-grid, .progress-grid { grid-template-columns: repeat(2, 1fr); } .practice-layout { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .app-shell { width: min(100% - 18px, 1180px); padding-top: 16px; } .topbar, .hero, .trainer-header, .section-title { flex-direction: column; align-items: stretch; } .level-ring { width: 120px; height: 120px; } .stats-grid, .mode-grid, .progress-grid, .summary-grid { grid-template-columns: 1fr; } .top-actions { justify-content: space-between; } .answer-btn { flex: 1 0 24%; } }
-
-/* Clean note-test page launched from settings. */
-body.clean-test .topbar,
-body.clean-test .coach-card,
-body.clean-test #explainBtn,
-body.clean-test #nextBtn,
-body.clean-test .session-pill { display: none; }
-body.clean-test .practice-layout { grid-template-columns: 1fr; max-width: 860px; margin: 0 auto; }
-body.clean-test .trainer-card { min-height: calc(100vh - 64px); display: grid; align-content: center; }
-.same-name-note { fill: #f59e0b; opacity: .9; stroke: #92400e; stroke-width: 2; }
-.question-note { fill: var(--brand); }
