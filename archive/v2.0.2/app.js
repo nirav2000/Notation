@@ -1,7 +1,9 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.2';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.0', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '2.0.2', status: 'current', date: '2026-06-08', path: './index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
+  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: '../v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
+  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: '../v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
   { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
   { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
   { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
@@ -388,52 +390,83 @@ function renderRhythmExercise() {
     { label: '𝅝', beats: [0], total: 4 }
   ];
   const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-  currentExercise = { type: 'rhythm', pattern, answer: 'tap' };
+  currentExercise = { type: 'rhythm', pattern, answer: 'tap', measures: 0 };
+  rhythmStart = 0;
+  rhythmTaps = [];
   el('modeLabel').textContent = 'Rhythm Trainer';
   el('promptText').textContent = 'Tap the rhythm with the pulse';
-  el('notationArea').innerHTML = `<div class="rhythm-card"><div class="rhythm-pulse" id="pulse">1</div><div class="rhythm-pattern" aria-label="Rhythm pattern">${pattern.label}</div><p class="muted">Tap the on-screen button or press Space on each note attack.</p></div>`;
-  renderAnswerButtons(['Start pulse', 'Tap'], rhythmAction);
-  el('coachTip').textContent = 'Count steady beats: 1, 2, 3, 4. Eighth notes divide the beat evenly in half.';
+  el('notationArea').innerHTML = `<div class="rhythm-card"><button class="rhythm-pulse" id="pulse" type="button" aria-label="Tap rhythm circle">Tap<br><small>circle</small></button><div class="rhythm-pattern" aria-label="Rhythm pattern">${pattern.label}</div><p class="muted rhythm-hint">Press Start, listen for the pulse, then tap this circle or press Space on each note attack. The pulse keeps looping so you can improve over several measures before grading.</p></div>`;
+  el('pulse').addEventListener('click', recordRhythmTap);
+  renderAnswerButtons(['Start pulse', 'Grade rhythm', 'Reset taps'], rhythmAction);
+  el('coachTip').textContent = 'Let one measure go by first, then tap the rhythm. You can keep trying over multiple measures and grade your best loop.';
 }
 
 function rhythmAction(value) {
   if (value === 'Start pulse') startRhythmPulse();
-  else recordRhythmTap();
+  else if (value === 'Reset taps') { rhythmTaps = []; el('feedback').textContent = 'Taps cleared. Keep the pulse going and try again.'; }
+  else gradeRhythm();
 }
 
 function startRhythmPulse() {
   rhythmTaps = [];
-  rhythmStart = performance.now() + 450;
+  rhythmStart = performance.now();
   let beat = 0;
+  let ticks = 0;
   clearInterval(rhythmTimer);
   rhythmTimer = setInterval(() => {
     const pulse = el('pulse');
     if (!pulse) return;
     beat = (beat % 4) + 1;
-    pulse.textContent = beat;
+    ticks += 1;
+    currentExercise.measures = Math.floor((ticks - 1) / 4) + 1;
+    pulse.innerHTML = `${beat}<br><small>tap</small>`;
     pulse.classList.add('on');
     setTimeout(() => pulse.classList.remove('on'), 130);
+    if (ticks >= 32) {
+      clearInterval(rhythmTimer);
+      pulse.innerHTML = 'Grade<br><small>now</small>';
+      el('feedback').textContent = 'Pulse paused after 8 measures. Grade your best attempt or start again.';
+    }
   }, 600);
-  el('feedback').textContent = 'Pulse started. Tap the rhythm notes, not every beat.';
+  el('feedback').className = 'feedback neutral';
+  el('feedback').textContent = 'Pulse started. Tap the circle on each note attack; you have up to 8 measures to improve.';
 }
 
 function recordRhythmTap() {
+  if (answered) return;
   if (!rhythmStart) startRhythmPulse();
+  const pulse = el('pulse');
+  pulse?.classList.add('tap-flash');
+  setTimeout(() => pulse?.classList.remove('tap-flash'), 100);
   rhythmTaps.push((performance.now() - rhythmStart) / 600);
-  if (rhythmTaps.length >= currentExercise.pattern.beats.length) gradeRhythm();
+  el('feedback').className = 'feedback neutral';
+  el('feedback').textContent = `${rhythmTaps.length} tap${rhythmTaps.length === 1 ? '' : 's'} captured. Keep going, then choose “Grade rhythm.”`;
 }
 
 function gradeRhythm() {
-  clearInterval(rhythmTimer);
   const expected = currentExercise.pattern.beats;
-  const diffs = expected.map((b, i) => Math.abs((rhythmTaps[i] ?? 99) - b));
-  const avgDiff = avg(diffs);
-  const score = clamp(1 - avgDiff / .45, 0, 1);
+  if (rhythmTaps.length < expected.length) {
+    el('feedback').className = 'feedback bad';
+    el('feedback').textContent = `Need at least ${expected.length} tap${expected.length === 1 ? '' : 's'} for this pattern. Tap the circle with the pulse, then grade again.`;
+    return;
+  }
+  clearInterval(rhythmTimer);
+  const measureScores = [];
+  for (let measure = 0; measure < 8; measure++) {
+    const measureStart = measure * currentExercise.pattern.total;
+    const taps = rhythmTaps.filter(t => t >= measureStart - .25 && t < measureStart + currentExercise.pattern.total + .25).map(t => t - measureStart);
+    if (taps.length < expected.length) continue;
+    const diffs = expected.map((b, i) => Math.abs((taps[i] ?? 99) - b));
+    measureScores.push({ measure: measure + 1, avgDiff: avg(diffs) });
+  }
+  const best = measureScores.sort((a, b) => a.avgDiff - b.avgDiff)[0] || { measure: 1, avgDiff: 9 };
+  const score = clamp(1 - best.avgDiff / .45, 0, 1);
   const correct = score >= .68;
   const label = score > .82 ? 'Good' : score > .55 ? 'Close' : 'Try again';
-  recordResult(correct, Math.round((performance.now() - exerciseStartedAt)), { rhythmScore: score });
-  showFeedback(correct, `${label}: average timing was ${avgDiff.toFixed(2)} beats from the target.`);
+  recordResult(correct, Math.round((performance.now() - exerciseStartedAt)), { rhythmScore: score, rhythmTaps: rhythmTaps.length, bestMeasure: best.measure });
+  showFeedback(correct, `${label}: best loop was measure ${best.measure}, averaging ${best.avgDiff.toFixed(2)} beats from the target.`);
   answered = true;
+  markExerciseComplete(correct);
 }
 
 function renderSightExercise() {
@@ -474,7 +507,7 @@ function renderAnswerButtons(values, handler) {
 }
 
 function handleAnswer(value, btn) {
-  if (answered && currentExercise.type !== 'sight') return;
+  if (answered) return;
   const time = Math.round(performance.now() - exerciseStartedAt);
   const correct = value === currentExercise.answer;
   btn?.classList.add(correct ? 'correct' : 'wrong');
@@ -482,9 +515,18 @@ function handleAnswer(value, btn) {
     if (correct) currentExercise.correctCount += 1;
     currentExercise.index += 1;
     if (currentExercise.index >= currentExercise.phrase.length) {
-      recordResult(currentExercise.correctCount === currentExercise.phrase.length, Math.round(performance.now() - currentExercise.started), { phraseAccuracy: currentExercise.correctCount / currentExercise.phrase.length });
-      showFeedback(currentExercise.correctCount === currentExercise.phrase.length, `Phrase complete: ${currentExercise.correctCount}/${currentExercise.phrase.length} notes correct.`);
+      const phraseTotal = currentExercise.phrase.length;
+      const phraseCorrect = currentExercise.correctCount;
+      const phrasePerfect = phraseCorrect === phraseTotal;
+      recordResult(phrasePerfect, Math.round(performance.now() - currentExercise.started), {
+        phraseAccuracy: phraseCorrect / phraseTotal,
+        phraseCorrect,
+        phraseTotal,
+        phraseNotes: currentExercise.phrase.map(note => ({ id: note.id, name: note.name, clef: note.clef, staff: note.staff, label: note.label }))
+      });
+      showFeedback(phrasePerfect, `Phrase complete: ${phraseCorrect}/${phraseTotal} notes correct.`);
       answered = true;
+      markExerciseComplete(phrasePerfect);
     } else {
       currentExercise.answer = currentExercise.phrase[currentExercise.index].name;
       renderPhraseProgress();
@@ -497,13 +539,18 @@ function handleAnswer(value, btn) {
   recordResult(correct, time, { userAnswer: value });
   showFeedback(correct, correct ? `Correct — ${time} ms. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}` : `Not quite. Correct answer: ${currentExercise.answer.replaceAll('-', ' ')}. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}`);
   answered = true;
-  if (correct && currentExercise.type === 'note') scheduleAutoAdvance();
+  markExerciseComplete(correct);
+}
+
+function markExerciseComplete(correct) {
+  el('nextBtn').textContent = session ? 'Next exercise' : 'Next';
+  if (correct && (session || currentExercise?.type === 'note')) scheduleAutoAdvance();
 }
 
 function scheduleAutoAdvance() {
   clearTimeout(autoAdvanceTimer);
   autoAdvanceTimer = setTimeout(() => {
-    if (!answered || currentExercise?.type !== 'note') return;
+    if (!answered) return;
     if (session && Date.now() > session.ends) endSession();
     else startMode(session ? chooseSessionMode() : (document.body.classList.contains('clean-test') ? 'clean-note' : currentMode), !!session);
   }, 1150);
@@ -603,9 +650,10 @@ function renderStaff(clef, notes, options = {}) {
 
 function showView(id) {
   if (id !== 'practice') document.body.classList.remove('clean-test');
-  ['dashboard', 'practice', 'progressView', 'summaryView'].forEach(v => el(v).classList.toggle('active', v === id));
+  ['dashboard', 'practice', 'progressView', 'settingsView', 'summaryView'].forEach(v => el(v).classList.toggle('active', v === id));
   if (id === 'dashboard') renderDashboard();
   if (id === 'progressView') renderProgress();
+  if (id === 'settingsView') updateFirebaseStatus();
 }
 
 function renderDashboard() {
@@ -632,6 +680,65 @@ function renderProgress() {
   clefs.sort((a, b) => b.acc - a.acc || a.time - b.time);
   el('clefSummary').textContent = clefs.length ? `Strongest clef: ${clefs[0].clef}. Weakest clef: ${clefs[clefs.length - 1].clef}.` : 'Clef statistics will appear after practice.';
   el('projectionText').textContent = projection();
+  renderRecentQuestions();
+}
+
+
+function miniStaffSvg(entry) {
+  const note = entry.noteId ? NOTES.find(n => n.id === entry.noteId) : null;
+  const phraseNotes = entry.phraseNotes || [];
+  const clef = note?.clef || phraseNotes[0]?.clef || entry.clef || 'treble';
+  const top = 18, gap = 8, left = 30;
+  const yFor = staff => top + (4 - staff) * gap;
+  const noteShapes = note ? [{ ...note, x: 84, fill: entry.correct ? '#00b894' : '#d92d20' }] : phraseNotes.slice(0, 5).map((n, i) => ({ ...n, x: 58 + i * 20, fill: entry.correct ? '#00b894' : '#d92d20' }));
+  const notesSvg = noteShapes.map(n => `<ellipse cx="${n.x}" cy="${yFor(n.staff || 0)}" rx="8" ry="5.5" transform="rotate(-18 ${n.x} ${yFor(n.staff || 0)})" fill="${n.fill}"/>`).join('');
+  return `<svg viewBox="0 0 150 70" aria-hidden="true"><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="140" y1="${top + i * gap}" y2="${top + i * gap}" stroke="currentColor" stroke-width="1.3"/>`).join('')}<text x="4" y="${clef === 'treble' ? 52 : 45}" font-size="${clef === 'treble' ? 42 : 34}" font-family="Georgia,serif" fill="currentColor">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${notesSvg}</g></svg>`;
+}
+
+function describeHistoryEntry(entry) {
+  if (entry.type === 'note') {
+    const note = NOTES.find(n => n.id === entry.noteId);
+    return { title: `${note?.label || entry.note || 'Note'} in ${entry.clef || note?.clef || 'staff'}`, detail: `Question: name the note. Answered ${entry.userAnswer || '—'}, correct answer ${entry.correctAnswer || entry.note}.` };
+  }
+  if (entry.type === 'sight') return { title: `Mini sight-reading phrase`, detail: `Phrase result: ${entry.phraseCorrect ?? Math.round((entry.phraseAccuracy || 0) * (entry.phraseTotal || 0))}/${entry.phraseTotal || '?'} notes correct.` };
+  if (entry.type === 'interval') return { title: `Interval: ${entry.interval?.replaceAll('-', ' ') || 'interval'}`, detail: `Question: identify the interval direction in ${entry.clef || 'the staff'}.` };
+  if (entry.type === 'rhythm') return { title: 'Rhythm tapping question', detail: `Timing score: ${Math.round((entry.rhythmScore || 0) * 100)}%.` };
+  return { title: 'Practice question', detail: 'Review this recent attempt.' };
+}
+
+function renderRecentQuestions() {
+  const target = el('recentQuestions');
+  if (!target) return;
+  const recent = state.history.slice(-8).reverse();
+  if (!recent.length) {
+    target.innerHTML = '<p class="muted">Your latest questions will appear here with a tiny staff preview and a review link after you practice.</p>';
+    return;
+  }
+  target.innerHTML = recent.map(entry => {
+    const desc = describeHistoryEntry(entry);
+    const when = new Date(entry.timestamp).toLocaleString();
+    const review = entry.noteId ? `<button class="secondary-btn" type="button" data-review-note="${entry.noteId}">Review note</button>` : `<span class="muted">${entry.type}</span>`;
+    return `<div class="review-item">${miniStaffSvg(entry)}<div class="review-meta"><strong>${desc.title}</strong><span>${desc.detail}<br>${entry.correct ? 'Correct' : 'Needs review'} · ${Math.round(entry.responseTime || 0)} ms · ${when}</span></div>${review}</div>`;
+  }).join('');
+}
+
+function reviewNote(noteId) {
+  const note = NOTES.find(n => n.id === noteId);
+  if (!note) return;
+  clearTimeout(autoAdvanceTimer);
+  session = null;
+  currentMode = 'note';
+  answered = false;
+  exerciseStartedAt = performance.now();
+  showView('practice');
+  el('sessionPill').textContent = 'Review question';
+  el('modeLabel').textContent = 'Question Review';
+  el('promptText').textContent = 'Try this note again';
+  currentExercise = { type: 'note', note, answer: note.name };
+  renderStaff(note.clef, [note]);
+  renderAnswerButtons(NOTE_NAMES, handleAnswer);
+  el('feedback').className = 'feedback neutral';
+  el('feedback').textContent = `Reviewing ${note.label}.`;
 }
 
 function makeBars(id, items) {
@@ -828,6 +935,8 @@ function bindEvents() {
   el('endSessionBtn').onclick = () => { session ? endSession() : showView('dashboard'); };
   el('summaryHomeBtn').onclick = () => showView('dashboard');
   el('backFromProgress').onclick = () => showView('dashboard');
+  el('backFromSettings').onclick = () => showView('dashboard');
+  el('openSettingsFromProgress').onclick = () => showView('settingsView');
   el('exportBtn').onclick = exportProgress;
   el('cloudSyncBtn').onclick = saveCloudProfile;
   el('cleanTestBtn').onclick = () => startMode('clean-note');
@@ -839,7 +948,11 @@ function bindEvents() {
   el('themeToggle').onclick = () => { state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark'; saveState(); applyTheme(); };
   el('soundToggle').onclick = () => { state.settings.sound = !state.settings.sound; saveState(); applySound(); };
   el('levelOverride').onchange = e => { state.settings.manualLevel = Number(e.target.value); saveState(); renderDashboard(); };
-  document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : startMode(btn.dataset.mode)));
+  document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : (btn.dataset.mode === 'settings' ? showView('settingsView') : startMode(btn.dataset.mode))));
+  el('recentQuestions').addEventListener('click', e => {
+    const noteId = e.target.closest('[data-review-note]')?.dataset.reviewNote;
+    if (noteId) reviewNote(noteId);
+  });
   document.addEventListener('keydown', e => {
     const key = e.key.toUpperCase();
     if (NOTE_NAMES.includes(key) && ['note', 'sight'].includes(currentMode)) handleAnswer(key);

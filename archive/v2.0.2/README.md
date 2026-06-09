@@ -1,6 +1,6 @@
-# Sight Reading Coach
+# Sight Reading Coach v2.0.2 Archive
 
-Sight Reading Coach v2.0.3 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
+Sight Reading Coach v2.0.2 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
 
 ## Run locally
 
@@ -18,7 +18,6 @@ Then visit <http://localhost:8000>.
 - `styles.css` — responsive light/dark visual design.
 - `app.js` — notation rendering, adaptive exercise logic, session flow, analytics, import/export, and localStorage persistence.
 - `version-history.json` — global semantic version history used by the in-app version selector.
-- `archive/v2.0.2/` — archived v2.0.2 app snapshot.
 - `archive/v2.0.1/` — archived v2.0.1 app snapshot.
 - `archive/v2.0.0/` — archived v2.0.0 app snapshot.
 - `archive/v1.0.1/` — archived v1.0.1 app snapshot.
@@ -57,14 +56,3 @@ service cloud.firestore {
 ```
 
 No custom backend is required. If Firebase auth or Firestore rules are not enabled yet, the app remains usable with local per-profile storage and shows a local-only sync status in Settings.
-
-
-## Version archive validation
-
-Run the archive validator before publishing a version manifest change:
-
-```bash
-python3 tools/validate-version-archive.py
-```
-
-The validator loads the root and archived `version-history.json` files, resolves every non-empty release path, and fails if any archive target is missing.

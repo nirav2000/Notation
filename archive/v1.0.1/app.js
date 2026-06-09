@@ -472,20 +472,91 @@ function populateLevels() {
   el('levelOverride').value = state.settings.manualLevel || state.currentLevel;
 }
 
+function getAppBasePath() {
+  const path = window.location.pathname;
+  const archiveIndex = path.indexOf('/archive/');
+  if (archiveIndex >= 0) return `${path.slice(0, archiveIndex)}/`;
+  return path.slice(0, path.lastIndexOf('/') + 1) || '/';
+}
+
+function getVersionManifestUrls() {
+  const base = getAppBasePath();
+  const urls = [];
+  if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+    urls.push(`${window.location.origin}${base}version-history.json`);
+  }
+  urls.push(new URL('version-history.json', window.location.href).href);
+  return [...new Set(urls)];
+}
+
+function resolveVersionPath(path) {
+  if (!path) return '';
+  if (/^(https?:|file:)/.test(path)) return path;
+  const cleaned = path.replace(/^\.\//, '').replace(/^\//, '');
+  const base = getAppBasePath();
+  if (window.location.protocol === 'http:' || window.location.protocol === 'https:') return `${window.location.origin}${base}${cleaned}`;
+  return `${base}${cleaned}`;
+}
+
+async function canNavigateTo(url) {
+  if (!url || !(window.location.protocol === 'http:' || window.location.protocol === 'https:')) return true;
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function injectArchiveBanner() {
+  if (!window.location.pathname.includes('/archive/')) return;
+  if (document.getElementById('archiveBanner')) return;
+  const banner = document.createElement('a');
+  banner.id = 'archiveBanner';
+  banner.href = resolveVersionPath('./index.html');
+  banner.textContent = '↩ Back to latest Sight Reading Coach';
+  banner.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:9999;background:#6c5ce7;color:white;padding:10px 14px;border-radius:999px;text-decoration:none;font:700 14px system-ui;box-shadow:0 10px 24px rgba(0,0,0,.18)';
+  document.body.appendChild(banner);
+}
+
 async function populateVersions() {
   let versions = VERSION_HISTORY_FALLBACK;
-  try {
-    const res = await fetch('./version-history.json');
-    if (res.ok) versions = await res.json();
-  } catch { /* file:// fallback */ }
-  el('versionSelect').innerHTML = versions.map(v => `<option value="${v.version}">${v.version} — ${v.status}</option>`).join('');
+  for (const url of getVersionManifestUrls()) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        versions = await res.json();
+        break;
+      }
+    } catch { /* keep trying candidate manifests */ }
+  }
+  el('versionSelect').innerHTML = versions.map(v => {
+    const selectable = v.path && v.status !== 'future';
+    return `<option value="${v.version}" ${selectable ? '' : 'disabled'}>${v.version} — ${v.status}</option>`;
+  }).join('');
   el('versionSelect').value = APP_VERSION;
-  el('versionSelect').onchange = e => {
+  el('versionSelect').onchange = async e => {
     const picked = versions.find(v => v.version === e.target.value);
     if (!picked) return;
-    if (picked.status === 'current') return;
-    if (picked.status === 'previous' && picked.path) window.location.href = picked.path;
-    if (picked.status === 'future') { alert(`${picked.version} is planned, not released yet. ${picked.notes}`); e.target.value = APP_VERSION; }
+    if (picked.version === APP_VERSION) return;
+    if (!picked.path || picked.status === 'future') {
+      alert(`${picked.version} is planned, not released yet. ${picked.notes}`);
+      e.target.value = APP_VERSION;
+      return;
+    }
+    const currentMajor = APP_VERSION.split('.')[0];
+    const pickedMajor = picked.version.split('.')[0];
+    if (currentMajor !== pickedMajor && !confirm('This switches across major versions. Export progress first if you need a backup. Continue?')) {
+      e.target.value = APP_VERSION;
+      return;
+    }
+    const url = resolveVersionPath(picked.path);
+    if (!(await canNavigateTo(url))) {
+      alert(`Could not find ${picked.version} at ${url}. Please use the latest version or check the archive manifest.`);
+      e.target.value = APP_VERSION;
+      return;
+    }
+    window.location.href = url;
   };
 }
 
@@ -562,6 +633,7 @@ function applySound() { el('soundToggle').textContent = state.settings.sound ? '
 function init() {
   populateLevels();
   populateVersions();
+  injectArchiveBanner();
   applyTheme();
   applySound();
   renderDashboard();
