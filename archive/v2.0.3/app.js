@@ -1,14 +1,13 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.3';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.4', status: 'current', date: '2026-06-10', path: './index.html', notes: 'Moves same-name answer hints into a separate reference staff to avoid confusing them with the question note.' },
-  { version: '2.0.3', status: 'previous', date: '2026-06-09', path: './archive/v2.0.3/index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
-  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: './archive/v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
-  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: './archive/v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
-  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: './archive/v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '2.0.3', status: 'current', date: '2026-06-09', path: './index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
+  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: '../v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
+  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: '../v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
+  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: '../v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
 ];
 
@@ -537,9 +536,9 @@ function handleAnswer(value, btn) {
     }
     return;
   }
-  if (currentExercise.type === 'note') renderStaff(currentExercise.note.clef, [currentExercise.note], { selectedName: value, isCorrect: correct });
+  if (currentExercise.type === 'note') renderStaff(currentExercise.note.clef, [currentExercise.note], { selectedName: value });
   recordResult(correct, time, { userAnswer: value });
-  showFeedback(correct, correct ? `Correct — ${time} ms. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}` : `Not quite. Correct answer: ${currentExercise.answer.replaceAll('-', ' ')}. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)} The small reference strip shows notes named ${value}; the large staff remains the question.`);
+  showFeedback(correct, correct ? `Correct — ${time} ms. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}` : `Not quite. Correct answer: ${currentExercise.answer.replaceAll('-', ' ')}. ${currentExercise.note?.explanation || intervalExplanation(currentExercise.answer)}`);
   answered = true;
   markExerciseComplete(correct);
 }
@@ -629,41 +628,25 @@ function renderStaff(clef, notes, options = {}) {
     for (let s = 5; s <= Math.floor(staff); s++) ledger += `<line x1="${x - 24}" x2="${x + 24}" y1="${yFor(s)}" y2="${yFor(s)}" class="staff-line ledger"/>`;
     return ledger;
   };
+  const sameNameHints = options.selectedName ? NOTES
+    .filter(note => note.clef === clef && note.name === options.selectedName && !notes.some(current => current.id === note.id))
+    .slice(0, 4) : [];
+  const hintSvg = sameNameHints.map((note, i) => {
+    const x = left + 260 + i * 70;
+    const y = yFor(note.staff);
+    return `${ledgerLines(x, note.staff)}<ellipse class="same-name-note" cx="${x}" cy="${y}" rx="13" ry="9" transform="rotate(-18 ${x} ${y})"><title>Another ${note.name}: ${note.label}</title></ellipse>`;
+  }).join('');
   const noteSvg = notes.map((note, i) => {
     const x = left + 130 + i * 86;
     const y = yFor(note.staff);
     const active = currentExercise?.type === 'sight' && i === currentExercise.index ? ' active-note' : '';
     const question = currentExercise?.type === 'note' && currentExercise.note?.id === note.id ? ' question-note' : '';
-    return `${ledgerLines(x, note.staff)}<ellipse class="notehead${active}${question}" cx="${x}" cy="${y}" rx="17" ry="12" transform="rotate(-18 ${x} ${y})"><title>${note.label || note.name}</title></ellipse><text x="${x}" y="${height - 24}" text-anchor="middle" class="note-label">${i + 1}</text>`;
+    const selected = options.selectedName === note.name ? ' same-name-note' : '';
+    return `${ledgerLines(x, note.staff)}<ellipse class="notehead${active}${question}${selected}" cx="${x}" cy="${y}" rx="17" ry="12" transform="rotate(-18 ${x} ${y})"><title>${note.label || note.name}</title></ellipse><text x="${x}" y="${height - 24}" text-anchor="middle" class="note-label">${i + 1}</text>`;
   }).join('');
   const clefClass = clef === 'treble' ? 'treble-clef' : 'bass-clef';
   const clefY = clef === 'treble' ? top + 78 : top + 58;
-  const mainStaff = `<svg viewBox="0 0 ${width} ${height}" aria-label="${clef} staff"><style>.staff-line{stroke:currentColor;stroke-width:2}.ledger{stroke-width:2.4}.notehead{fill:#243042}.active-note,.question-note{fill:#6c5ce7}.clef{font-family:Georgia,'Times New Roman',serif;font-weight:700}.treble-clef{font-size:94px}.bass-clef{font-size:72px}.note-label{fill:var(--muted);font:700 12px system-ui}body.dark .notehead{fill:#f8fafc}body.dark .active-note,body.dark .question-note{fill:#a78bfa}</style><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="${width - 56}" y1="${top + i * gap}" y2="${top + i * gap}" class="staff-line"/>`).join('')}<text x="32" y="${clefY}" class="clef ${clefClass}">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${noteSvg}</g></svg>`;
-  el('notationArea').innerHTML = `<div class="staff-stack">${mainStaff}${renderSameNameReference(clef, notes, options)}</div>`;
-}
-
-function renderSameNameReference(clef, notes, options = {}) {
-  if (!options.selectedName) return '';
-  const matchingNotes = NOTES
-    .filter(note => note.clef === clef && note.name === options.selectedName)
-    .slice(0, 6);
-  if (!matchingNotes.length) return '';
-  const width = 520, height = 118, left = 56, top = 34, gap = 10;
-  const yFor = staff => top + (4 - staff) * gap;
-  const ledgerLines = (x, staff) => {
-    let ledger = '';
-    for (let s = Math.ceil(staff); s <= -1; s++) ledger += `<line x1="${x - 16}" x2="${x + 16}" y1="${yFor(s)}" y2="${yFor(s)}" class="reference-line ledger"/>`;
-    for (let s = 5; s <= Math.floor(staff); s++) ledger += `<line x1="${x - 16}" x2="${x + 16}" y1="${yFor(s)}" y2="${yFor(s)}" class="reference-line ledger"/>`;
-    return ledger;
-  };
-  const noteShapes = matchingNotes.map((note, i) => {
-    const x = left + 92 + i * 58;
-    const y = yFor(note.staff);
-    const isQuestion = notes.some(current => current.id === note.id);
-    return `${ledgerLines(x, note.staff)}<ellipse class="reference-note ${isQuestion ? 'reference-question' : ''}" cx="${x}" cy="${y}" rx="12" ry="8" transform="rotate(-18 ${x} ${y})"><title>${note.label}</title></ellipse><text x="${x}" y="${height - 16}" text-anchor="middle" class="reference-label">${note.label}</text>`;
-  }).join('');
-  const label = options.isCorrect ? `Same-name examples for ${options.selectedName}` : `Reference: notes named ${options.selectedName} (your answer)`;
-  return `<div class="same-name-reference" aria-label="${label}"><div><strong>${label}</strong><span>Separate reference — the large staff above remains the question.</span></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${label} on ${clef} staff"><style>.reference-line{stroke:currentColor;stroke-width:1.5}.ledger{stroke-width:1.8}.reference-note{fill:#f59e0b;stroke:#92400e;stroke-width:2}.reference-question{fill:#6c5ce7;stroke:#4c1d95}.reference-label{fill:var(--muted);font:700 9px system-ui}.reference-clef{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:${clef === 'treble' ? '44px' : '36px'}}body.dark .reference-question{fill:#a78bfa}</style><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="${width - 30}" y1="${top + i * gap}" y2="${top + i * gap}" class="reference-line"/>`).join('')}<text x="12" y="${clef === 'treble' ? top + 43 : top + 34}" class="reference-clef">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${noteShapes}</g></svg></div>`;
+  el('notationArea').innerHTML = `<svg viewBox="0 0 ${width} ${height}" aria-label="${clef} staff"><style>.staff-line{stroke:currentColor;stroke-width:2}.ledger{stroke-width:2.4}.notehead{fill:#243042}.active-note,.question-note{fill:#6c5ce7}.same-name-note{fill:#f59e0b;opacity:.92;stroke:#92400e;stroke-width:2}.clef{font-family:Georgia,'Times New Roman',serif;font-weight:700}.treble-clef{font-size:94px}.bass-clef{font-size:72px}.note-label{fill:var(--muted);font:700 12px system-ui}body.dark .notehead{fill:#f8fafc}body.dark .active-note,body.dark .question-note{fill:#a78bfa}</style><g color="var(--text)">${[0,1,2,3,4].map(i => `<line x1="${left}" x2="${width - 56}" y1="${top + i * gap}" y2="${top + i * gap}" class="staff-line"/>`).join('')}<text x="32" y="${clefY}" class="clef ${clefClass}">${clef === 'treble' ? '𝄞' : '𝄢'}</text>${hintSvg}${noteSvg}</g></svg>`;
 }
 
 function showView(id) {

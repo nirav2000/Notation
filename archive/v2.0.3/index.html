@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sight Reading Coach</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Adaptive piano practice</p>
+        <h1>Sight Reading Coach</h1>
+      </div>
+      <div class="top-actions">
+        <label class="version-picker">Profile
+          <select id="profileSelect" aria-label="Switch user profile"></select>
+        </label>
+        <button id="newProfileBtn" class="ghost-btn" type="button" aria-label="Create a new profile">＋ Profile</button>
+        <label class="version-picker">Version
+          <select id="versionSelect" aria-label="Switch app version"></select>
+        </label>
+        <button id="themeToggle" class="ghost-btn" type="button" aria-label="Toggle dark or light mode">🌙</button>
+        <button id="soundToggle" class="ghost-btn" type="button" aria-label="Toggle sound">🔔</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="dashboard" class="view active" aria-labelledby="dashboardTitle">
+        <div class="hero card">
+          <div>
+            <p class="eyebrow">Today’s focus</p>
+            <h2 id="dashboardTitle">Build confident two-clef fluency</h2>
+            <p id="suggestionText" class="muted">Start with landmark notes, then expand by steps and skips.</p>
+            <div class="hero-actions">
+              <button id="startSessionBtn" class="primary-btn" type="button">Start 5-minute session</button>
+              <button id="weakSpotsBtn" class="secondary-btn" type="button">Practice weak spots</button>
+            </div>
+          </div>
+          <div class="level-ring" aria-label="Current level">
+            <span>Level</span>
+            <strong id="levelRing">1</strong>
+          </div>
+        </div>
+
+        <div class="stats-grid" aria-label="Practice summary">
+          <article class="stat-card"><span>Current level</span><strong id="statLevel">1</strong></article>
+          <article class="stat-card"><span>Focus area</span><strong id="statFocus">Landmarks</strong></article>
+          <article class="stat-card"><span>Accuracy today</span><strong id="statAccuracy">—</strong></article>
+          <article class="stat-card"><span>Avg response</span><strong id="statResponse">—</strong></article>
+          <article class="stat-card"><span>Streak</span><strong id="statStreak">0 days</strong></article>
+          <article class="stat-card"><span>Completed</span><strong id="statCompleted">0</strong></article>
+        </div>
+
+        <nav class="mode-grid" aria-label="Quick practice modes">
+          <button data-mode="note" class="mode-card"><strong>Note Trainer</strong><span>Landmarks, steps, ledger lines</span></button>
+          <button data-mode="interval" class="mode-card"><strong>Interval Trainer</strong><span>Same, steps, skips, 2nds–5ths</span></button>
+          <button data-mode="rhythm" class="mode-card"><strong>Rhythm Trainer</strong><span>Tap with the metronome</span></button>
+          <button data-mode="sight" class="mode-card"><strong>Mini Sight Reading</strong><span>Short generated phrases</span></button>
+          <button data-mode="progress" class="mode-card"><strong>Progress</strong><span>Trends, strengths, review</span></button>
+          <button data-mode="settings" class="mode-card"><strong>Settings</strong><span>Profiles, Firebase sync, imports</span></button>
+        </nav>
+      </section>
+
+      <section id="practice" class="view" aria-live="polite">
+        <div class="practice-layout">
+          <article class="card trainer-card">
+            <div class="trainer-header">
+              <div>
+                <p id="modeLabel" class="eyebrow">Note Trainer</p>
+                <h2 id="promptText">Name the note</h2>
+              </div>
+              <div class="session-pill" id="sessionPill">Free practice</div>
+            </div>
+            <div id="notationArea" class="notation-area" role="img" aria-label="Music notation exercise"></div>
+            <div id="phraseProgress" class="phrase-progress hidden" aria-label="Phrase progress"></div>
+            <div id="answerArea" class="answer-area"></div>
+            <div id="feedback" class="feedback neutral">Choose an answer to begin.</div>
+            <div class="trainer-actions">
+              <button id="explainBtn" class="ghost-btn" type="button">Explain this note</button>
+              <button id="nextBtn" class="secondary-btn" type="button">Next</button>
+              <button id="endSessionBtn" class="ghost-btn" type="button">Back to dashboard</button>
+            </div>
+          </article>
+          <aside class="card coach-card">
+            <h3>Coach tip</h3>
+            <p id="coachTip">Use landmark notes first: Middle C, Treble G, and Bass F. Then read by distance.</p>
+            <label>Manual level override
+              <select id="levelOverride" aria-label="Manual level override"></select>
+            </label>
+            <div class="mini-keyboard" aria-hidden="true">
+              <span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>A</span><span>B</span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="progressView" class="view">
+        <div class="section-title">
+          <div><p class="eyebrow">Analytics</p><h2>Progress dashboard</h2></div>
+          <button id="backFromProgress" class="secondary-btn" type="button">Back</button>
+        </div>
+        <div class="progress-grid">
+          <article class="card"><h3>Recent accuracy</h3><div id="accuracyChart" class="bar-chart"></div></article>
+          <article class="card"><h3>Response time trend</h3><div id="timeChart" class="bar-chart"></div></article>
+          <article class="card"><h3>Strongest notes</h3><ul id="strongNotes" class="insight-list"></ul></article>
+          <article class="card"><h3>Needs review</h3><ul id="weakNotes" class="insight-list"></ul></article>
+          <article class="card"><h3>Clef fluency</h3><p id="clefSummary" class="muted"></p></article>
+          <article class="card"><h3>Next-level projection</h3><p id="projectionText" class="muted"></p></article>
+          <article class="card recent-review-card"><h3>Recent question review</h3><div id="recentQuestions" class="recent-question-list"></div></article>
+        </div>
+        <div class="settings card">
+          <h3>Settings moved</h3>
+          <p class="muted">Profiles, Firebase sync, clean note test, import, export, and reset now live on a dedicated Settings page.</p>
+          <button id="openSettingsFromProgress" class="secondary-btn" type="button">Open Settings</button>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="section-title">
+          <div><p class="eyebrow">App controls</p><h2>Settings</h2></div>
+          <button id="backFromSettings" class="secondary-btn" type="button">Back</button>
+        </div>
+        <div class="settings-grid">
+          <article class="card settings">
+            <h3>Profiles and cloud sync</h3>
+            <p id="firebaseStatus" class="muted">Firebase sync is starting…</p>
+            <div class="settings-row">
+              <button id="cloudSyncBtn" class="secondary-btn" type="button">Sync active profile now</button>
+              <button id="exportBtn" class="secondary-btn" type="button">Export Progress JSON</button>
+              <label class="import-label">Import Progress JSON<input id="importInput" type="file" accept="application/json" /></label>
+            </div>
+          </article>
+          <article class="card settings">
+            <h3>Practice tools</h3>
+            <p class="muted">Use the clean note-test page when you want only the “name the note” panel without dashboard chrome.</p>
+            <div class="settings-row">
+              <button id="cleanTestBtn" class="secondary-btn" type="button">Open clean note test page</button>
+            </div>
+          </article>
+          <article class="card settings danger-zone">
+            <h3>Danger zone</h3>
+            <p class="muted">Reset only the active profile’s local progress. Export first if you may want to restore it.</p>
+            <button id="resetBtn" class="danger-btn" type="button">Reset Active Profile Progress</button>
+          </article>
+        </div>
+      </section>
+
+      <section id="summaryView" class="view">
+        <article class="card summary-card">
+          <p class="eyebrow">Session complete</p>
+          <h2>Great practice!</h2>
+          <div id="sessionSummary" class="summary-grid"></div>
+          <button id="summaryHomeBtn" class="primary-btn" type="button">Return to dashboard</button>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <template id="answerButtonTemplate"><button class="answer-btn" type="button"></button></template>
+  <script src="app.js"></script>
+</body>
+</html>

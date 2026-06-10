@@ -129,9 +129,3 @@ body.clean-test .practice-layout { grid-template-columns: 1fr; max-width: 860px;
 body.clean-test .trainer-card { min-height: calc(100vh - 64px); display: grid; align-content: center; }
 .same-name-note { fill: #f59e0b; opacity: .9; stroke: #92400e; stroke-width: 2; }
 .question-note { fill: var(--brand); }
-.staff-stack { width: 100%; display: grid; gap: 12px; justify-items: center; }
-.same-name-reference { width: min(100%, 680px); display: grid; grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.35fr); gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(245, 158, 11, .35); border-radius: 16px; background: rgba(245, 158, 11, .10); }
-.same-name-reference strong { display: block; color: var(--text); margin-bottom: 3px; }
-.same-name-reference span { display: block; color: var(--muted); font-size: .86rem; line-height: 1.35; }
-.same-name-reference svg { width: 100%; max-width: 520px; height: auto; }
-@media (max-width: 640px) { .same-name-reference { grid-template-columns: 1fr; } }

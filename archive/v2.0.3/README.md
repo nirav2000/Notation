@@ -1,6 +1,6 @@
-# Sight Reading Coach
+# Sight Reading Coach v2.0.3 Archive
 
-Sight Reading Coach v2.0.4 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
+Sight Reading Coach v2.0.3 is a beginner-friendly static web app for improving piano sight-reading. It teaches with landmark notes and interval reading, then adapts practice based on accuracy, response time, and weak spots.
 
 ## Run locally
 
@@ -18,7 +18,6 @@ Then visit <http://localhost:8000>.
 - `styles.css` — responsive light/dark visual design.
 - `app.js` — notation rendering, adaptive exercise logic, session flow, analytics, import/export, and localStorage persistence.
 - `version-history.json` — global semantic version history used by the in-app version selector.
-- `archive/v2.0.3/` — archived v2.0.3 app snapshot.
 - `archive/v2.0.2/` — archived v2.0.2 app snapshot.
 - `archive/v2.0.1/` — archived v2.0.1 app snapshot.
 - `archive/v2.0.0/` — archived v2.0.0 app snapshot.
