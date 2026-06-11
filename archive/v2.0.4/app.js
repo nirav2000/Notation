@@ -1,15 +1,14 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.5';
+const APP_VERSION = '2.0.4';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.5', status: 'current', date: '2026-06-11', path: './index.html', notes: 'Adds the coach cockpit dashboard, richer history explorer/replay, per-note phrase analytics, Google sign-in, and safer cloud conflicts.' },
-  { version: '2.0.4', status: 'previous', date: '2026-06-10', path: './archive/v2.0.4/index.html', notes: 'Moves same-name answer hints into a separate reference staff to avoid confusing them with the question note.' },
-  { version: '2.0.3', status: 'previous', date: '2026-06-09', path: './archive/v2.0.3/index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
-  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: './archive/v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
-  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: './archive/v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
-  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: './archive/v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '2.0.4', status: 'current', date: '2026-06-10', path: './index.html', notes: 'Moves same-name answer hints into a separate reference staff to avoid confusing them with the question note.' },
+  { version: '2.0.3', status: 'previous', date: '2026-06-09', path: '../v2.0.3/index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
+  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: '../v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
+  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: '../v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
+  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: '../v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
 ];
 
@@ -73,7 +72,7 @@ let rhythmStart = 0;
 let rhythmTaps = [];
 let autoAdvanceTimer = null;
 let saveDebounce = null;
-let firebaseSync = { ready: false, status: 'Connecting to Firebase…', uid: null, provider: 'local', db: null, doc: null, setDoc: null, getDoc: null, serverTimestamp: null, auth: null, authSdk: null, googleProvider: null };
+let firebaseSync = { ready: false, status: 'Connecting to Firebase…', uid: null, db: null, doc: null, setDoc: null, getDoc: null, serverTimestamp: null };
 
 const el = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -85,7 +84,6 @@ function defaultState() {
     settings: { theme: 'light', sound: true, manualLevel: 1 },
     currentLevel: 1,
     history: [],
-    historyNotes: [],
     noteStats: {},
     clefStats: {},
     intervalStats: {},
@@ -181,14 +179,6 @@ function updateFirebaseStatus(text = firebaseSync.status) {
   firebaseSync.status = text;
   const status = el('firebaseStatus');
   if (status) status.textContent = `Firebase: ${text}`;
-  const signedIn = !!firebaseSync.auth?.currentUser && !firebaseSync.auth.currentUser.isAnonymous;
-  if (el('googleSignInBtn')) el('googleSignInBtn').textContent = signedIn ? 'Google connected' : 'Sign in with Google';
-}
-
-function authProviderLabel(user = firebaseSync.auth?.currentUser) {
-  if (!user) return 'local only';
-  if (user.isAnonymous) return `anonymous user ${user.uid.slice(0, 8)}…`;
-  return user.displayName || user.email || `Google user ${user.uid.slice(0, 8)}…`;
 }
 
 async function initFirebase() {
@@ -202,75 +192,22 @@ async function initFirebase() {
     const app = initializeApp(FIREBASE_CONFIG);
     try { getAnalytics(app); } catch { /* analytics is unavailable on file:// and some local hosts */ }
     const auth = authSdk.getAuth(app);
-    firebaseSync.auth = auth;
-    firebaseSync.authSdk = authSdk;
-    firebaseSync.googleProvider = new authSdk.GoogleAuthProvider();
     firebaseSync.db = firestoreSdk.getFirestore(app);
     firebaseSync.doc = firestoreSdk.doc;
     firebaseSync.setDoc = firestoreSdk.setDoc;
     firebaseSync.getDoc = firestoreSdk.getDoc;
     firebaseSync.serverTimestamp = firestoreSdk.serverTimestamp;
     authSdk.onAuthStateChanged(auth, user => {
-      if (!user) {
-        firebaseSync.ready = false;
-        firebaseSync.uid = null;
-        updateFirebaseStatus('signed out; local browser storage only');
-        return;
-      }
+      if (!user) return;
       firebaseSync.uid = user.uid;
-      firebaseSync.provider = user.isAnonymous ? 'anonymous' : 'google';
       firebaseSync.ready = true;
-      updateFirebaseStatus(`connected as ${authProviderLabel(user)}`);
+      updateFirebaseStatus(`connected as anonymous user ${user.uid.slice(0, 8)}…`);
       loadCloudProfile();
       scheduleCloudSave();
     });
-    if (!auth.currentUser) await authSdk.signInAnonymously(auth);
+    await authSdk.signInAnonymously(auth);
   } catch (error) {
     updateFirebaseStatus(`offline/local only (${error.message || 'Firebase unavailable'})`);
-  }
-}
-
-async function signInWithGoogle() {
-  if (!firebaseSync.auth || !firebaseSync.authSdk || !firebaseSync.googleProvider) {
-    updateFirebaseStatus('Google sign-in unavailable until Firebase loads');
-    return;
-  }
-  try {
-    const current = firebaseSync.auth.currentUser;
-    if (current?.isAnonymous) {
-      await firebaseSync.authSdk.linkWithPopup(current, firebaseSync.googleProvider);
-    } else {
-      await firebaseSync.authSdk.signInWithPopup(firebaseSync.auth, firebaseSync.googleProvider);
-    }
-    updateFirebaseStatus(`connected as ${authProviderLabel()}`);
-    await loadCloudProfile();
-    await saveCloudProfile();
-  } catch (error) {
-    if (error.code === 'auth/credential-already-in-use' || error.code === 'auth/email-already-in-use') {
-      try {
-        await firebaseSync.authSdk.signInWithPopup(firebaseSync.auth, firebaseSync.googleProvider);
-        updateFirebaseStatus(`connected as ${authProviderLabel()}`);
-        await loadCloudProfile();
-        await saveCloudProfile();
-        return;
-      } catch (fallbackError) {
-        updateFirebaseStatus(`Google sign-in failed (${fallbackError.message || 'check Firebase Auth settings'})`);
-        return;
-      }
-    }
-    updateFirebaseStatus(`Google sign-in failed (${error.message || 'check Firebase Auth settings'})`);
-  }
-}
-
-async function signOutFirebase() {
-  if (!firebaseSync.auth || !firebaseSync.authSdk) return;
-  try {
-    await firebaseSync.authSdk.signOut(firebaseSync.auth);
-    firebaseSync.ready = false;
-    firebaseSync.uid = null;
-    updateFirebaseStatus('signed out; local browser storage only');
-  } catch (error) {
-    updateFirebaseStatus(`sign-out failed (${error.message || 'try again'})`);
   }
 }
 
@@ -286,42 +223,19 @@ function scheduleCloudSave() {
 
 async function saveCloudProfile() {
   const ref = cloudProfileRef();
-  if (!ref || !firebaseSync.setDoc) {
-    updateFirebaseStatus('cloud save unavailable; using local storage');
-    return;
-  }
+  if (!ref || !firebaseSync.setDoc) return;
   try {
-    const profile = activeProfile();
     await firebaseSync.setDoc(ref, {
-      profile,
+      profile: activeProfile(),
       appVersion: APP_VERSION,
-      schemaVersion: appData.schemaVersion || 2,
-      provider: firebaseSync.provider,
-      profileUpdatedAtClient: profile.updatedAt,
-      updatedAtServer: firebaseSync.serverTimestamp()
+      updatedAt: firebaseSync.serverTimestamp()
     }, { merge: true });
-    const syncedAt = new Date().toISOString();
-    appData.cloud.lastSync = syncedAt;
-    profile.lastSyncedAt = syncedAt;
+    appData.cloud.lastSync = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    updateFirebaseStatus(`synced ${profile.name} at ${new Date().toLocaleTimeString()}`);
+    updateFirebaseStatus(`synced ${activeProfile().name} at ${new Date().toLocaleTimeString()}`);
   } catch (error) {
     updateFirebaseStatus(`sync failed (${error.message || 'check Firestore rules'})`);
   }
-}
-
-function shouldAcceptCloudProfile(cloudProfile, cloudMeta = {}) {
-  const localProfile = activeProfile();
-  const cloudUpdated = cloudMeta.profileUpdatedAtClient || cloudProfile?.updatedAt;
-  const localUpdated = localProfile.updatedAt;
-  if (!cloudProfile || !cloudUpdated) return false;
-  if (!localUpdated || cloudUpdated > localUpdated) return true;
-  const lastSync = localProfile.lastSyncedAt || appData.cloud.lastSync;
-  const bothChanged = lastSync && localUpdated > lastSync && cloudUpdated > lastSync && cloudUpdated !== localUpdated;
-  if (bothChanged) {
-    return confirm(`Cloud progress for ${cloudProfile.name || 'this profile'} differs from this browser. Load the cloud copy? Choose Cancel to keep local data and upload it on the next sync.`);
-  }
-  return false;
 }
 
 async function loadCloudProfile() {
@@ -329,12 +243,9 @@ async function loadCloudProfile() {
   if (!ref || !firebaseSync.getDoc) return;
   try {
     const snap = await firebaseSync.getDoc(ref);
-    const data = snap.exists() ? snap.data() : null;
-    const cloudProfile = data?.profile;
-    if (shouldAcceptCloudProfile(cloudProfile, data || {})) {
-      const syncedAt = new Date().toISOString();
-      appData.profiles[appData.activeProfileId] = { ...normalizeProfile(cloudProfile), lastSyncedAt: syncedAt };
-      appData.cloud.lastSync = syncedAt;
+    const cloudProfile = snap.exists() ? snap.data().profile : null;
+    if (cloudProfile?.updatedAt && cloudProfile.updatedAt > activeProfile().updatedAt) {
+      appData.profiles[appData.activeProfileId] = normalizeProfile(cloudProfile);
       state = activeProfile().data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       renderDashboard();
@@ -570,7 +481,7 @@ function renderSightExercise() {
     const nexts = pool.filter(n => Math.abs(n.staff - prev.staff) <= maxMove && n.id !== prev.id);
     phrase.push(nexts[Math.floor(Math.random() * nexts.length)] || weightedPick(pool, noteWeight));
   }
-  currentExercise = { type: 'sight', clef, phrase, index: 0, answer: phrase[0].name, started: performance.now(), correctCount: 0, answers: [], noteStartedAt: performance.now() };
+  currentExercise = { type: 'sight', clef, phrase, index: 0, answer: phrase[0].name, started: performance.now(), correctCount: 0 };
   el('modeLabel').textContent = 'Mini Sight Reading';
   el('promptText').textContent = 'Play through the phrase by note name';
   renderStaff(clef, phrase);
@@ -603,22 +514,6 @@ function handleAnswer(value, btn) {
   const correct = value === currentExercise.answer;
   btn?.classList.add(correct ? 'correct' : 'wrong');
   if (currentExercise.type === 'sight') {
-    const attemptedNote = currentExercise.phrase[currentExercise.index];
-    const noteTime = Math.round(performance.now() - (currentExercise.noteStartedAt || exerciseStartedAt));
-    currentExercise.answers.push({
-      noteId: attemptedNote.id,
-      note: attemptedNote.name,
-      clef: attemptedNote.clef,
-      staff: attemptedNote.staff,
-      label: attemptedNote.label,
-      correctAnswer: attemptedNote.name,
-      userAnswer: value,
-      correct,
-      responseTime: noteTime,
-      timestamp: Date.now()
-    });
-    pushRecent(statBucket(state.noteStats, attemptedNote.id), correct, noteTime, { source: 'phrase', userAnswer: value });
-    pushRecent(statBucket(state.clefStats, attemptedNote.clef), correct, noteTime, { source: 'phrase' });
     if (correct) currentExercise.correctCount += 1;
     currentExercise.index += 1;
     if (currentExercise.index >= currentExercise.phrase.length) {
@@ -629,20 +524,16 @@ function handleAnswer(value, btn) {
         phraseAccuracy: phraseCorrect / phraseTotal,
         phraseCorrect,
         phraseTotal,
-        phraseNotes: currentExercise.phrase.map(note => ({ id: note.id, name: note.name, clef: note.clef, staff: note.staff, label: note.label })),
-        phraseAnswers: currentExercise.answers
+        phraseNotes: currentExercise.phrase.map(note => ({ id: note.id, name: note.name, clef: note.clef, staff: note.staff, label: note.label }))
       });
-      state.historyNotes.push(...currentExercise.answers.map(answer => ({ ...answer, parentType: 'sight', parentTimestamp: Date.now() })));
-      state.historyNotes = state.historyNotes.slice(-2000);
       showFeedback(phrasePerfect, `Phrase complete: ${phraseCorrect}/${phraseTotal} notes correct.`);
       answered = true;
       markExerciseComplete(phrasePerfect);
     } else {
       currentExercise.answer = currentExercise.phrase[currentExercise.index].name;
-      currentExercise.noteStartedAt = performance.now();
       renderPhraseProgress();
       renderStaff(currentExercise.clef, currentExercise.phrase);
-      showFeedback(correct, correct ? 'Correct. Keep the line moving.' : `That note was ${attemptedNote.name}. Continue from the next note.`);
+      showFeedback(correct, correct ? 'Correct. Keep the line moving.' : `That note was ${currentExercise.phrase[currentExercise.index - 1].name}. Continue from the next note.`);
     }
     return;
   }
@@ -678,11 +569,10 @@ function recordResult(correct, time, extra = {}) {
     pushRecent(statBucket(state.noteStats, currentExercise.note.id), correct, time);
     pushRecent(statBucket(state.clefStats, currentExercise.note.clef), correct, time);
   } else if (currentExercise.type === 'interval') {
-    Object.assign(entry, { interval: currentExercise.answer, clef: currentExercise.first.clef, firstNote: { id: currentExercise.first.id, name: currentExercise.first.name, clef: currentExercise.first.clef, staff: currentExercise.first.staff, label: currentExercise.first.label }, secondNote: { id: currentExercise.second.id, name: currentExercise.second.name, clef: currentExercise.second.clef, staff: currentExercise.second.staff, label: currentExercise.second.label } });
+    Object.assign(entry, { interval: currentExercise.answer, clef: currentExercise.first.clef });
     pushRecent(statBucket(state.intervalStats, currentExercise.answer), correct, time);
     pushRecent(statBucket(state.clefStats, currentExercise.first.clef), correct, time);
   } else if (currentExercise.type === 'rhythm') {
-    Object.assign(entry, { pattern: currentExercise.pattern });
     state.rhythmStats.attempts += 1;
     state.rhythmStats.good += correct ? 1 : 0;
     state.rhythmStats.avgScore = ((state.rhythmStats.avgScore * (state.rhythmStats.attempts - 1)) + (extra.rhythmScore || 0)) / state.rhythmStats.attempts;
@@ -784,85 +674,6 @@ function showView(id) {
   if (id === 'settingsView') updateFirebaseStatus();
 }
 
-function recentEntries(type = null, limit = 40) {
-  const items = type ? state.history.filter(entry => entry.type === type) : state.history;
-  return items.slice(-limit);
-}
-
-function getTodaySummary() {
-  const day = state.daily[today()] || { attempts: 0, correct: 0, totalTime: 0 };
-  return {
-    attempts: day.attempts,
-    accuracy: day.attempts ? day.correct / day.attempts : 0,
-    avgTime: day.attempts ? day.totalTime / day.attempts : 0
-  };
-}
-
-function getAreaMasterySummary() {
-  const noteRecent = recentEntries('note', 30);
-  const intervalRecent = recentEntries('interval', 30);
-  const rhythmRecent = recentEntries('rhythm', 20);
-  const sightRecent = recentEntries('sight', 20);
-  const score = entries => entries.length ? recentAccuracy(entries) : null;
-  return [
-    { key: 'note', label: 'Notes', score: score(noteRecent), attempts: noteRecent.length },
-    { key: 'interval', label: 'Intervals', score: score(intervalRecent), attempts: intervalRecent.length },
-    { key: 'rhythm', label: 'Rhythm', score: rhythmRecent.length ? avg(rhythmRecent.map(e => e.rhythmScore || 0)) : null, attempts: rhythmRecent.length },
-    { key: 'sight', label: 'Phrases', score: sightRecent.length ? avg(sightRecent.map(e => e.phraseAccuracy ?? (e.correct ? 1 : 0))) : null, attempts: sightRecent.length }
-  ];
-}
-
-function getLevelReadiness() {
-  const recent = recentEntries(null, 30).filter(entry => ['note', 'interval', 'sight'].includes(entry.type));
-  const accuracyScore = recent.length ? recentAccuracy(recent) : 0;
-  const timeScore = recent.length ? avg(recent.map(entry => entry.responseTime || 2200)) : 2200;
-  const weakCount = weakestNotes(6).filter(item => accuracy(item.stats) < .8 || averageTime(item.stats) > 2200).length;
-  const accuracyPart = clamp(accuracyScore / .85, 0, 1) * 55;
-  const timePart = clamp((2600 - timeScore) / 1000, 0, 1) * 30;
-  const weakPart = clamp((6 - weakCount) / 6, 0, 1) * 15;
-  const readiness = Math.round(accuracyPart + timePart + weakPart);
-  const blockers = [];
-  if (recent.length < 20) blockers.push(`${20 - recent.length} more mixed attempts needed`);
-  if (accuracyScore < .85) blockers.push(`raise recent accuracy to 85%`);
-  if (timeScore >= 1800) blockers.push(`bring average response under 1800 ms`);
-  if (weakCount) blockers.push(`review ${weakCount} weak note${weakCount === 1 ? '' : 's'}`);
-  return { readiness, accuracyScore, timeScore, blockers };
-}
-
-function getNextPracticeRecommendation() {
-  const areas = getAreaMasterySummary().filter(area => area.score !== null);
-  const weakArea = areas.sort((a, b) => a.score - b.score || b.attempts - a.attempts)[0];
-  const weakNotes = weakestNotes(3).map(item => item.note.label);
-  if (weakArea?.score < .75) return { title: `Focus on ${weakArea.label.toLowerCase()}`, detail: `Your recent ${weakArea.label.toLowerCase()} score is ${Math.round(weakArea.score * 100)}%. Try a targeted 5-minute session.`, mode: weakArea.key };
-  if (weakNotes.length) return { title: 'Review slow or missed notes', detail: `Suggested review: ${weakNotes.join(', ')}.`, mode: 'note' };
-  return { title: currentLevelInfo().description, detail: 'Keep a balanced session: notes, intervals, rhythm, and short phrases.', mode: 'session' };
-}
-
-function metricChip(label, value, detail = '') {
-  return `<div class="metric-chip"><span>${label}</span><strong>${value}</strong>${detail ? `<small>${detail}</small>` : ''}</div>`;
-}
-
-function renderCoachDashboard() {
-  const todaySummary = getTodaySummary();
-  const readiness = getLevelReadiness();
-  const recommendation = getNextPracticeRecommendation();
-  const areas = getAreaMasterySummary();
-  const weak = weakestNotes(4);
-  const recent = state.history.slice(-20);
-  const lastTen = state.history.slice(-10);
-  const priorTen = state.history.slice(-20, -10);
-  const trend = lastTen.length && priorTen.length ? Math.round((recentAccuracy(lastTen) - recentAccuracy(priorTen)) * 100) : 0;
-  el('nextActionCard').innerHTML = `<p class="eyebrow">Coach next step</p><h3>${recommendation.title}</h3><p class="muted">${recommendation.detail}</p><div class="coach-actions"><button class="primary-btn" type="button" data-coach-start="session">Start balanced session</button><button class="secondary-btn" type="button" data-coach-start="weak">Practice weak spots</button></div>`;
-  el('readinessCard').innerHTML = `<p class="eyebrow">Level readiness</p><h3>${readiness.readiness}% ready for Level ${Math.min(10, currentLevelInfo().level + 1)}</h3><div class="readiness-meter"><span style="width:${readiness.readiness}%"></span></div><p class="muted">${readiness.blockers.length ? readiness.blockers.slice(0, 2).join(' · ') : 'You meet the current progression targets.'}</p>`;
-  el('weakSpotCard').innerHTML = `<p class="eyebrow">Weak spots</p><h3>${weak.length ? 'Review queue' : 'No weak spots yet'}</h3><ul class="compact-list">${weak.length ? weak.map(item => `<li>${item.note.label}: ${Math.round(accuracy(item.stats) * 100)}%, ${Math.round(averageTime(item.stats))} ms</li>`).join('') : '<li>Practice a few questions to build a review queue.</li>'}</ul>`;
-  el('trendCard').innerHTML = `<p class="eyebrow">Trend</p><h3>${trend > 0 ? '+' : ''}${trend}% recent accuracy</h3><div class="metric-row">${metricChip('Today', todaySummary.attempts ? `${Math.round(todaySummary.accuracy * 100)}%` : '—', `${todaySummary.attempts} attempts`)}${metricChip('Speed', todaySummary.avgTime ? `${Math.round(todaySummary.avgTime)} ms` : '—')}${metricChip('Streak', `${state.streak || 0}d`)}</div>`;
-  el('dataAccessCard').innerHTML = `<p class="eyebrow">All data access</p><h3>${state.history.length} saved attempts</h3><p class="muted">Use Progress for filters, replay buttons, JSON export, and per-note/interval/rhythm/phrase history.</p><button class="secondary-btn" type="button" data-open-progress>Open data explorer</button><div class="area-scores">${areas.map(area => `<span>${area.label}: ${area.score === null ? '—' : `${Math.round(area.score * 100)}%`}</span>`).join('')}</div>`;
-  document.querySelectorAll('[data-coach-start="session"]').forEach(btn => btn.onclick = () => startSession(false));
-  document.querySelectorAll('[data-coach-start="weak"]').forEach(btn => btn.onclick = () => startSession(true));
-  document.querySelectorAll('[data-open-progress]').forEach(btn => btn.onclick = () => showView('progressView'));
-  el('suggestionText').textContent = recommendation.detail;
-}
-
 function renderDashboard() {
   const day = state.daily[today()] || { attempts: 0, correct: 0, totalTime: 0 };
   const level = currentLevelInfo();
@@ -873,7 +684,8 @@ function renderDashboard() {
   el('statResponse').textContent = day.attempts ? `${Math.round(day.totalTime / day.attempts)} ms` : '—';
   el('statStreak').textContent = `${state.streak || 0} day${state.streak === 1 ? '' : 's'}`;
   el('statCompleted').textContent = state.totalCompleted;
-  renderCoachDashboard();
+  const weak = weakestNotes(3).map(x => x.note.label).join(', ');
+  el('suggestionText').textContent = weak ? `Suggested next session: review ${weak}.` : `Suggested next session: ${level.description}.`;
 }
 
 function renderProgress() {
@@ -887,13 +699,12 @@ function renderProgress() {
   el('clefSummary').textContent = clefs.length ? `Strongest clef: ${clefs[0].clef}. Weakest clef: ${clefs[clefs.length - 1].clef}.` : 'Clef statistics will appear after practice.';
   el('projectionText').textContent = projection();
   renderRecentQuestions();
-  renderHistoryExplorer();
 }
 
 
 function miniStaffSvg(entry) {
   const note = entry.noteId ? NOTES.find(n => n.id === entry.noteId) : null;
-  const phraseNotes = entry.phraseNotes || (entry.firstNote ? [entry.firstNote, entry.secondNote] : []);
+  const phraseNotes = entry.phraseNotes || [];
   const clef = note?.clef || phraseNotes[0]?.clef || entry.clef || 'treble';
   const top = 18, gap = 8, left = 30;
   const yFor = staff => top + (4 - staff) * gap;
@@ -903,16 +714,13 @@ function miniStaffSvg(entry) {
 }
 
 function describeHistoryEntry(entry) {
-  if (entry.parentType === 'sight') {
-    return { title: `${entry.label || entry.note} inside phrase`, detail: `Phrase note answer: chose ${entry.userAnswer || '—'}, correct answer ${entry.correctAnswer || entry.note}.` };
-  }
   if (entry.type === 'note') {
     const note = NOTES.find(n => n.id === entry.noteId);
     return { title: `${note?.label || entry.note || 'Note'} in ${entry.clef || note?.clef || 'staff'}`, detail: `Question: name the note. Answered ${entry.userAnswer || '—'}, correct answer ${entry.correctAnswer || entry.note}.` };
   }
-  if (entry.type === 'sight') return { title: `Mini sight-reading phrase`, detail: `Phrase result: ${entry.phraseCorrect ?? Math.round((entry.phraseAccuracy || 0) * (entry.phraseTotal || 0))}/${entry.phraseTotal || '?'} notes correct. ${entry.phraseAnswers?.length ? 'Tap Replay to inspect each note answer.' : ''}` };
-  if (entry.type === 'interval') return { title: `Interval: ${entry.interval?.replaceAll('-', ' ') || 'interval'}`, detail: `Question: identify the interval direction in ${entry.clef || 'the staff'}${entry.firstNote ? ` from ${entry.firstNote.name} to ${entry.secondNote?.name}` : ''}.` };
-  if (entry.type === 'rhythm') return { title: `Rhythm: ${entry.pattern?.label || 'tapping question'}`, detail: `Timing score: ${Math.round((entry.rhythmScore || 0) * 100)}%; best loop ${entry.bestMeasure || '—'}.` };
+  if (entry.type === 'sight') return { title: `Mini sight-reading phrase`, detail: `Phrase result: ${entry.phraseCorrect ?? Math.round((entry.phraseAccuracy || 0) * (entry.phraseTotal || 0))}/${entry.phraseTotal || '?'} notes correct.` };
+  if (entry.type === 'interval') return { title: `Interval: ${entry.interval?.replaceAll('-', ' ') || 'interval'}`, detail: `Question: identify the interval direction in ${entry.clef || 'the staff'}.` };
+  if (entry.type === 'rhythm') return { title: 'Rhythm tapping question', detail: `Timing score: ${Math.round((entry.rhythmScore || 0) * 100)}%.` };
   return { title: 'Practice question', detail: 'Review this recent attempt.' };
 }
 
@@ -927,8 +735,7 @@ function renderRecentQuestions() {
   target.innerHTML = recent.map(entry => {
     const desc = describeHistoryEntry(entry);
     const when = new Date(entry.timestamp).toLocaleString();
-    const idx = state.history.indexOf(entry);
-    const review = `<button class="secondary-btn" type="button" data-review-entry="${idx}">Replay</button>`;
+    const review = entry.noteId ? `<button class="secondary-btn" type="button" data-review-note="${entry.noteId}">Review note</button>` : `<span class="muted">${entry.type}</span>`;
     return `<div class="review-item">${miniStaffSvg(entry)}<div class="review-meta"><strong>${desc.title}</strong><span>${desc.detail}<br>${entry.correct ? 'Correct' : 'Needs review'} · ${Math.round(entry.responseTime || 0)} ms · ${when}</span></div>${review}</div>`;
   }).join('');
 }
@@ -950,81 +757,6 @@ function reviewNote(noteId) {
   renderAnswerButtons(NOTE_NAMES, handleAnswer);
   el('feedback').className = 'feedback neutral';
   el('feedback').textContent = `Reviewing ${note.label}.`;
-}
-
-
-
-function replayHistoryEntry(index) {
-  const entry = state.history[Number(index)];
-  if (!entry) return;
-  if (entry.type === 'note') return reviewNote(entry.noteId);
-  clearTimeout(autoAdvanceTimer);
-  clearInterval(rhythmTimer);
-  session = null;
-  answered = false;
-  exerciseStartedAt = performance.now();
-  showView('practice');
-  el('sessionPill').textContent = 'Replay history';
-  el('modeLabel').textContent = 'History replay';
-  const desc = describeHistoryEntry(entry);
-  el('feedback').className = 'feedback neutral';
-  el('feedback').textContent = `${desc.detail} Original result: ${entry.correct ? 'correct' : 'needs review'}.`;
-  if (entry.type === 'interval' && entry.firstNote && entry.secondNote) {
-    currentMode = 'interval';
-    currentExercise = { type: 'interval', first: entry.firstNote, second: entry.secondNote, answer: entry.interval };
-    el('promptText').textContent = 'Replay this interval';
-    renderStaff(entry.clef || entry.firstNote.clef, [entry.firstNote, entry.secondNote]);
-    renderAnswerButtons(['same', 'step-up', 'step-down', 'skip-up', 'skip-down', '4th-up', '4th-down', '5th-up', '5th-down'], handleAnswer);
-    return;
-  }
-  if (entry.type === 'rhythm') {
-    currentMode = 'rhythm';
-    currentExercise = { type: 'rhythm', pattern: entry.pattern || { label: '♩ ♩ ♩ ♩', beats: [0, 1, 2, 3], total: 4 }, answer: 'tap', measures: 0 };
-    rhythmStart = 0;
-    rhythmTaps = [];
-    el('promptText').textContent = 'Replay this rhythm';
-    el('notationArea').innerHTML = `<div class="rhythm-card"><button class="rhythm-pulse" id="pulse" type="button" aria-label="Tap rhythm circle">Tap<br><small>circle</small></button><div class="rhythm-pattern" aria-label="Rhythm pattern">${currentExercise.pattern.label}</div><p class="muted rhythm-hint">Original score: ${Math.round((entry.rhythmScore || 0) * 100)}%. Tap the circle or press Space to try this pattern again.</p></div>`;
-    el('pulse').addEventListener('click', recordRhythmTap);
-    renderAnswerButtons(['Start pulse', 'Grade rhythm', 'Reset taps'], rhythmAction);
-    return;
-  }
-  if (entry.type === 'sight' && entry.phraseNotes?.length) {
-    currentMode = 'sight';
-    currentExercise = { type: 'sight', clef: entry.clef || entry.phraseNotes[0].clef, phrase: entry.phraseNotes, index: 0, answer: entry.phraseNotes[0].name, started: performance.now(), correctCount: 0, answers: [], noteStartedAt: performance.now() };
-    el('promptText').textContent = 'Replay this phrase';
-    renderStaff(currentExercise.clef, currentExercise.phrase);
-    renderPhraseProgress();
-    renderAnswerButtons(NOTE_NAMES, handleAnswer);
-  }
-}
-
-function renderHistoryExplorer() {
-  const filters = el('historyFilters');
-  const table = el('historyTable');
-  if (!filters || !table) return;
-  const types = ['all', 'note', 'interval', 'rhythm', 'sight', 'phrase-notes'];
-  if (!filters.dataset.ready) {
-    filters.innerHTML = `<label>Type<select id="historyTypeFilter">${types.map(t => `<option value="${t}">${t.replace('-', ' ')}</option>`).join('')}</select></label><label>Result<select id="historyResultFilter"><option value="all">All</option><option value="correct">Correct</option><option value="missed">Needs review</option></select></label><label>Search<input id="historySearchFilter" type="search" placeholder="C, bass, rhythm…" /></label>`;
-    filters.dataset.ready = 'true';
-    ['historyTypeFilter', 'historyResultFilter', 'historySearchFilter'].forEach(id => el(id).addEventListener('input', renderHistoryExplorer));
-  }
-  const type = el('historyTypeFilter')?.value || 'all';
-  const result = el('historyResultFilter')?.value || 'all';
-  const query = (el('historySearchFilter')?.value || '').trim().toLowerCase();
-  const combined = [...state.history.map((entry, index) => ({ ...entry, index })), ...(state.historyNotes || []).map((entry, index) => ({ ...entry, type: 'phrase-notes', index: `note-${index}` }))];
-  const filtered = combined.filter(entry => {
-    if (type !== 'all' && entry.type !== type) return false;
-    if (result === 'correct' && !entry.correct) return false;
-    if (result === 'missed' && entry.correct) return false;
-    const desc = describeHistoryEntry(entry);
-    const haystack = `${desc.title} ${desc.detail} ${entry.note || ''} ${entry.clef || ''} ${entry.userAnswer || ''}`.toLowerCase();
-    return !query || haystack.includes(query);
-  }).slice(-80).reverse();
-  table.innerHTML = filtered.length ? `<table><thead><tr><th>When</th><th>Question</th><th>Result</th><th>Detail</th><th></th></tr></thead><tbody>${filtered.map(entry => {
-    const desc = describeHistoryEntry(entry);
-    const canReplay = Number.isInteger(entry.index) && entry.type !== 'phrase-notes';
-    return `<tr><td>${new Date(entry.timestamp || entry.parentTimestamp || Date.now()).toLocaleString()}</td><td>${desc.title}</td><td><span class="result-pill ${entry.correct ? 'good' : 'bad'}">${entry.correct ? 'Correct' : 'Review'}</span></td><td>${desc.detail}<br><span class="muted">${Math.round(entry.responseTime || 0)} ms</span></td><td>${canReplay ? `<button class="secondary-btn" type="button" data-review-entry="${entry.index}">Replay</button>` : '<span class="muted">per-note</span>'}</td></tr>`;
-  }).join('')}</tbody></table>` : '<p class="muted">No entries match those filters yet.</p>';
 }
 
 function makeBars(id, items) {
@@ -1225,8 +957,6 @@ function bindEvents() {
   el('openSettingsFromProgress').onclick = () => showView('settingsView');
   el('exportBtn').onclick = exportProgress;
   el('cloudSyncBtn').onclick = saveCloudProfile;
-  el('googleSignInBtn').onclick = signInWithGoogle;
-  el('signOutBtn').onclick = signOutFirebase;
   el('cleanTestBtn').onclick = () => startMode('clean-note');
   el('newProfileBtn').onclick = addProfile;
   el('profileSelect').onchange = e => switchProfile(e.target.value);
@@ -1237,9 +967,7 @@ function bindEvents() {
   el('soundToggle').onclick = () => { state.settings.sound = !state.settings.sound; saveState(); applySound(); };
   el('levelOverride').onchange = e => { state.settings.manualLevel = Number(e.target.value); saveState(); renderDashboard(); };
   document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => btn.dataset.mode === 'progress' ? showView('progressView') : (btn.dataset.mode === 'settings' ? showView('settingsView') : startMode(btn.dataset.mode))));
-  document.addEventListener('click', e => {
-    const entryIndex = e.target.closest('[data-review-entry]')?.dataset.reviewEntry;
-    if (entryIndex !== undefined) replayHistoryEntry(entryIndex);
+  el('recentQuestions').addEventListener('click', e => {
     const noteId = e.target.closest('[data-review-note]')?.dataset.reviewNote;
     if (noteId) reviewNote(noteId);
   });

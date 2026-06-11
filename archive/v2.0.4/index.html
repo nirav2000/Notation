@@ -44,13 +44,6 @@
           </div>
         </div>
 
-        <div class="coach-dashboard" aria-label="Personal practice dashboard">
-          <article class="card next-action-card" id="nextActionCard"></article>
-          <article class="card readiness-card" id="readinessCard"></article>
-          <article class="card weakspot-card" id="weakSpotCard"></article>
-          <article class="card trend-card" id="trendCard"></article>
-          <article class="card data-card" id="dataAccessCard"></article>
-        </div>
         <div class="stats-grid" aria-label="Practice summary">
           <article class="stat-card"><span>Current level</span><strong id="statLevel">1</strong></article>
           <article class="stat-card"><span>Focus area</span><strong id="statFocus">Landmarks</strong></article>
@@ -116,7 +109,6 @@
           <article class="card"><h3>Clef fluency</h3><p id="clefSummary" class="muted"></p></article>
           <article class="card"><h3>Next-level projection</h3><p id="projectionText" class="muted"></p></article>
           <article class="card recent-review-card"><h3>Recent question review</h3><div id="recentQuestions" class="recent-question-list"></div></article>
-          <article class="card history-card"><h3>Practice history explorer</h3><div id="historyFilters" class="history-filters"></div><div id="historyTable" class="history-table"></div></article>
         </div>
         <div class="settings card">
           <h3>Settings moved</h3>
@@ -135,8 +127,6 @@
             <h3>Profiles and cloud sync</h3>
             <p id="firebaseStatus" class="muted">Firebase sync is starting…</p>
             <div class="settings-row">
-              <button id="googleSignInBtn" class="secondary-btn" type="button">Sign in with Google</button>
-              <button id="signOutBtn" class="ghost-btn" type="button">Sign out</button>
               <button id="cloudSyncBtn" class="secondary-btn" type="button">Sync active profile now</button>
               <button id="exportBtn" class="secondary-btn" type="button">Export Progress JSON</button>
               <label class="import-label">Import Progress JSON<input id="importInput" type="file" accept="application/json" /></label>

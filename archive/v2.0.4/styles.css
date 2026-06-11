@@ -135,31 +135,3 @@ body.clean-test .trainer-card { min-height: calc(100vh - 64px); display: grid; a
 .same-name-reference span { display: block; color: var(--muted); font-size: .86rem; line-height: 1.35; }
 .same-name-reference svg { width: 100%; max-width: 520px; height: auto; }
 @media (max-width: 640px) { .same-name-reference { grid-template-columns: 1fr; } }
-
-/* v2.0.5 coach cockpit and data explorer refinements. */
-.coach-dashboard { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 18px; margin: 22px 0; }
-.next-action-card { background: linear-gradient(135deg, rgba(108,92,231,.14), rgba(0,184,148,.12)); }
-.next-action-card h3, .readiness-card h3, .weakspot-card h3, .trend-card h3, .data-card h3 { margin: 6px 0 8px; font-size: 1.25rem; }
-.coach-actions, .metric-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.readiness-meter { height: 14px; border-radius: 999px; background: rgba(108,92,231,.14); overflow: hidden; border: 1px solid var(--line); margin: 14px 0; }
-.readiness-meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .25s ease; }
-.compact-list { margin: 10px 0 0; padding-left: 18px; color: var(--muted); line-height: 1.6; }
-.metric-chip { flex: 1 1 96px; min-width: 96px; border: 1px solid var(--line); background: rgba(255,255,255,.38); border-radius: 16px; padding: 11px 12px; }
-body.dark .metric-chip { background: rgba(15, 23, 42, .38); }
-.metric-chip span, .metric-chip small { display: block; color: var(--muted); font-size: .78rem; }
-.metric-chip strong { display: block; font-size: 1.15rem; margin: 2px 0; }
-.area-scores { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.area-scores span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; color: var(--muted); font-weight: 700; font-size: .85rem; }
-.history-card { grid-column: 1 / -1; }
-.history-filters { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 12px; margin: 14px 0 18px; }
-.history-filters label { display: grid; gap: 6px; color: var(--muted); font-weight: 800; }
-.history-filters input, .history-filters select { width: 100%; }
-.history-table { max-height: 520px; overflow: auto; border: 1px solid var(--line); border-radius: 18px; }
-.history-table table { width: 100%; border-collapse: collapse; min-width: 780px; }
-.history-table th, .history-table td { text-align: left; vertical-align: top; padding: 12px; border-bottom: 1px solid var(--line); }
-.history-table th { position: sticky; top: 0; background: var(--panel); z-index: 1; color: var(--muted); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; }
-.result-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-weight: 900; font-size: .78rem; }
-.result-pill.good { background: rgba(0,184,148,.16); color: var(--success); }
-.result-pill.bad { background: rgba(217,45,32,.14); color: var(--danger); }
-@media (max-width: 1060px) { .coach-dashboard { grid-template-columns: 1fr 1fr; } .next-action-card { grid-column: 1 / -1; } }
-@media (max-width: 720px) { .coach-dashboard, .history-filters { grid-template-columns: 1fr; } .history-table { border: 0; } }
