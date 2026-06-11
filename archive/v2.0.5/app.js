@@ -1,16 +1,15 @@
 /* Sight Reading Coach - static, localStorage-powered MVP */
-const APP_VERSION = '2.0.6';
+const APP_VERSION = '2.0.5';
 const VERSION_HISTORY_FALLBACK = [
-  { version: '2.0.6', status: 'current', date: '2026-06-11', path: './index.html', notes: 'Publishing maintenance release that archives v2.0.5 and keeps the coach cockpit, history explorer, Google sync, and archive validation current.' },
-  { version: '2.0.5', status: 'previous', date: '2026-06-11', path: './archive/v2.0.5/index.html', notes: 'Adds the coach cockpit dashboard, richer history explorer/replay, per-note phrase analytics, Google sign-in, and safer cloud conflicts.' },
-  { version: '2.0.4', status: 'previous', date: '2026-06-10', path: './archive/v2.0.4/index.html', notes: 'Moves same-name answer hints into a separate reference staff to avoid confusing them with the question note.' },
-  { version: '2.0.3', status: 'previous', date: '2026-06-09', path: './archive/v2.0.3/index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
-  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: './archive/v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
-  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: './archive/v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
-  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: './archive/v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
-  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: './archive/v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
-  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: './archive/v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
-  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: './archive/v0.0.1/index.html', notes: 'Archived repository starter page.' },
+  { version: '2.0.5', status: 'current', date: '2026-06-11', path: './index.html', notes: 'Adds the coach cockpit dashboard, richer history explorer/replay, per-note phrase analytics, Google sign-in, and safer cloud conflicts.' },
+  { version: '2.0.4', status: 'previous', date: '2026-06-10', path: '../v2.0.4/index.html', notes: 'Moves same-name answer hints into a separate reference staff to avoid confusing them with the question note.' },
+  { version: '2.0.3', status: 'previous', date: '2026-06-09', path: '../v2.0.3/index.html', notes: 'Makes version switching use a canonical manifest, adds archive validation, and improves archive navigation safety.' },
+  { version: '2.0.2', status: 'previous', date: '2026-06-08', path: '../v2.0.2/index.html', notes: 'Improves rhythm tapping, adds a dedicated settings page, fixes archive back paths, and tightens header alignment.' },
+  { version: '2.0.1', status: 'previous', date: '2026-06-08', path: '../v2.0.1/index.html', notes: 'Fixes header alignment, session advancement, phrase counting, and adds detailed recent-question review.' },
+  { version: '2.0.0', status: 'previous', date: '2026-06-08', path: '../v2.0.0/index.html', notes: 'Major release with user profiles, Firebase cloud sync, clean note-test page, auto-advance, same-note highlighting, and larger clefs.' },
+  { version: '1.0.1', status: 'previous', date: '2026-06-08', path: '../v1.0.1/index.html', notes: 'Fixes staff placement accuracy, sight-reading highlighting, and version archive handling.' },
+  { version: '1.0.0', status: 'previous', date: '2026-06-08', path: '../v1.0.0/index.html', notes: 'Initial polished MVP with adaptive note, interval, rhythm, mini sight-reading, local progress, and version switcher.' },
+  { version: '0.0.1', status: 'previous', date: '2026-06-08', path: '../v0.0.1/index.html', notes: 'Archived repository starter page.' },
   { version: '2.1.0', status: 'future', date: 'Planned', path: '', notes: 'Planned: named cloud login, teacher dashboards, richer MIDI support, and grand staff phrases.' }
 ];
 
